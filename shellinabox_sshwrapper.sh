@@ -2,7 +2,7 @@
 # 
 read -p "SSH remote host (hostname or ip address): " host;
 #
-read -p "SSH remote port [22]: " port;
+read -p "SSH remote port (22): " port;
 #
 read -p "SSH remote username: " username;
 #
