@@ -1,0 +1,9 @@
+[Unit]
+Description=shellinabox
+
+[Service]
+Type=oneshot
+ExecStart=/opt/shellinabox/shellinaboxd --cert=/tmp/ --service=/:webssh:webssh:HOME:'/home/webssh/shellinabox_sshwrapper.sh'
+
+[Install]
+WantedBy=multi-user.target
