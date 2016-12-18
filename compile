@@ -1,0 +1,7 @@
+#!/bin/bash
+
+#read -p "Wie heißt die datei die compiliert werden muss? : " file
+
+gcc -Wall -g "$1".c -o $1 `pkg-config --cflags gtk+-2.0` `pkg-config --libs gtk+-2.0`
+
+./"$1"
