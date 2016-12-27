@@ -8,7 +8,7 @@ do
         FILENAME=${1##*/} # Dateiname ist alles ab dem letzten '/'
         echo "$FILENAME"
         # guck dir die Ausgabe erstmal an - wenn alles passt kannst Du das "echo" weglassen
-        ffmpeg -i "$FILENAME" "${FILENAME%.*}.mp3" 
+        ffmpeg -i "$FILENAME" "${FILENAME%.*}.ogg" 
         shift
         cd -
 done
