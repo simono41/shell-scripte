@@ -10,7 +10,7 @@ do
         FILENAME=${1##*/} # Dateiname ist alles ab dem letzten '/'
         echo "$FILENAME"
         # guck dir die Ausgabe erstmal an - wenn alles passt kannst Du das "echo" weglassen
-        ../ffmpeg.exe -activation_bytes $code -i "$FILENAME" "${FILENAME%.*}.ogg" 
+        ../ffmpeg.exe -activation_bytes $code -i "$FILENAME" -vn "${FILENAME%.*}.ogg" 
         shift
         cd -
 done
