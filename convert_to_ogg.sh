@@ -1,6 +1,5 @@
 #!/bin/bash
 
-mkdir ""$1"/output"
 while (( "$#" ))
 do
 
@@ -9,7 +8,7 @@ do
         FILENAME=${1##*/} # Dateiname ist alles ab dem letzten '/'
         echo "$FILENAME"
         # guck dir die Ausgabe erstmal an - wenn alles passt kannst Du das "echo" weglassen
-        ffmpeg -i "$FILENAME" ./output/"${FILENAME%.*}.ogg" 
+        ffmpeg -i "$FILENAME" "${FILENAME%.*}.ogg" 
         shift
         cd -
 done
