@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "HOOKS="base udev archiso sata filesystems"" > work/airootfs/etc/mkinitcpio.conf
-echo "COMPRESSION="xz"" > work/airootfs/etc/mkinitcpio.conf
+echo "COMPRESSION="xz"" >> work/airootfs/etc/mkinitcpio.conf
 
 arch-chroot work/airootfs mkinitcpio -p linux
 
