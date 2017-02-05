@@ -19,7 +19,7 @@ cp work/airootfs/usr/lib/syslinux/bios/ldlinux.c32 work/iso/isolinux/
 arch-chroot work/airootfs LANG=C pacman -Sl | awk '/\[installed\]$/ {print $1 "/" $2 "-" $3}' > /pkglist.txt
 cp work/airootfs/pkglist.txt work/iso/arch/x86_64/
 arch-chroot work/airootfs pacman -Scc
-mksquashfs work/airootfs work/iso/arch/x86_64/airootfs.sfs
+mksquashfs work/airootfs work/iso/arch/x86_64/airootfs.sfs -noappend -comp xz
 md5sum work/iso/arch/x86_64/airootfs.sfs > work/iso/arch/x86_64/airootfs.md5
 
 echo "DEFAULT menu.c32" > work/iso/arch/boot/syslinux/syslinux.cfg
@@ -54,5 +54,5 @@ xorriso -as mkisofs \
 -eltorito\-catalog work/iso/isolinux/boot.cat \
 -no-emul-boot -boot-load-size 4 -boot-info-table \
 -isohybrid-mbr $(pwd)/work/iso/arch/isolinux/isohdpfx.bin \
--output out/arch-simon-linux-$(date "+%y.%m.%d")-x86_64.iso arch
+-output out/arch-simon-linux-$(date "+%y.%m.%d")-x86_64.iso work/iso
 fi
