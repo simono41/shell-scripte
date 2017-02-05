@@ -48,6 +48,6 @@ xorriso -as mkisofs \
 -eltorito-boot work/iso/isolinux/isolinux.bin \
 -eltorito\-catalog work/iso/isolinux/boot.cat \
 -no-emul-boot -boot-load-size 4 -boot-info-table \
--isohybrid-mbr $(pwd)/iso/arch/isolinux/isohdpfx.bin \
+-isohybrid-mbr $(pwd)/work/iso/arch/isolinux/isohdpfx.bin \
 -output out/arch-simon-linux-$(date "+%y.%m.%d")-x86_64.iso arch
 fi
