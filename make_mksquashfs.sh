@@ -38,7 +38,7 @@ echo "  APPEND /arch/boot/syslinux/" >> work/iso/isolinux/isolinux.cfg
 
 read -p "Soll das Image jetzt gemacht werden? [Y/n] " image
 
-if [ "$root" != "n" ]
+if [ "$image" != "n" ]
   then
   mkdir out
 xorriso -as mkisofs \
