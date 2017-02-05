@@ -1,3 +1,5 @@
+arch-chroot work/airootfs mkinitcpio -p linux
+
 mkdir work/iso
 mkdir work/iso/isolinux
 mkdir work/iso/arch
@@ -12,7 +14,7 @@ cp work/airootfs/boot/initramfs-linux-fallback.img work/iso/arch/boot/x86_64/
 cp work/airootfs/boot/vmlinuz-linux work/iso/arch/boot/x86_64/
 
 arch-chroot work/airootfs LANG=C pacman -Sl | awk '/\[installed\]$/ {print $1 "/" $2 "-" $3}' > /pkglist.txt
-cp work/airootfs/pkglist.txt work/iso/arch/boot/x86_64/
+cp work/airootfs/pkglist.txt work/iso/arch/x86_64/
 arch-chroot work/airootfs pacman -Scc
 mksquashfs work/airootfs work/iso/arch/x86_64/airootfs.sfs
 md5sum work/iso/arch/x86_64/airootfs.sfs > work/iso/arch/x86_64/airootfs.md5
