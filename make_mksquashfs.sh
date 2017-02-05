@@ -12,6 +12,9 @@ cp -R work/airootfs/usr/lib/syslinux/bios/* work/iso/arch/boot/syslinux/
 cp work/airootfs/boot/initramfs-linux.img work/iso/arch/boot/x86_64/
 cp work/airootfs/boot/initramfs-linux-fallback.img work/iso/arch/boot/x86_64/
 cp work/airootfs/boot/vmlinuz-linux work/iso/arch/boot/x86_64/
+cp work/airootfs/usr/lib/syslinux/bios/isolinux.bin work/iso/isolinux/
+cp work/airootfs/usr/lib/syslinux/bios/isohdpfx.bin work/iso/isolinux/
+cp work/airootfs/usr/lib/syslinux/bios/ldlinux.c32 work/iso/isolinux/
 
 arch-chroot work/airootfs LANG=C pacman -Sl | awk '/\[installed\]$/ {print $1 "/" $2 "-" $3}' > /pkglist.txt
 cp work/airootfs/pkglist.txt work/iso/arch/x86_64/
