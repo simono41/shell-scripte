@@ -21,7 +21,7 @@ curl -o ${work_dir}/airootfs/usr/lib/initcpio/install/archiso https://raw.github
 curl -o ${work_dir}/airootfs/usr/lib/initcpio/hooks/archiso https://raw.githubusercontent.com/simono41/archiso/master/archiso/initcpio/hooks/archiso
 
 echo "HOOKS="base udev archiso sata filesystems"" > ${work_dir}/airootfs/etc/mkinitcpio.conf
-echo "COMPRESSION="xz"" >> ${work_dir}/${install_dir}/etc/mkinitcpio.conf
+echo "COMPRESSION="xz"" >> ${work_dir}/airootfs/etc/mkinitcpio.conf
 
 echo ${iso_name} > ${work_dir}/airootfs/etc/hostname
 
