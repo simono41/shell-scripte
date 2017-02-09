@@ -16,8 +16,7 @@ pacstrap -i ${work_dir}/airootfs base base-devel syslinux efibootmgr efitools
 curl -o ${work_dir}/airootfs/usr/lib/initcpio/install/archiso https://raw.githubusercontent.com/simono41/archiso/master/archiso/initcpio/install/archiso
 curl -o ${work_dir}/airootfs/usr/lib/initcpio/hooks/archiso https://raw.githubusercontent.com/simono41/archiso/master/archiso/initcpio/hooks/archiso
 
-echo "Bitte fuer aenderungen jetzt abrechen!!!"
-sleep 10
+read -p "Wenn Fertig gebaut dann eingabetaste druecken sonst abrechen mit Steuerung + C!!!"
 
 echo "HOOKS="base udev archiso sata filesystems"" > ${work_dir}/${install_dir}/etc/mkinitcpio.conf
 echo "COMPRESSION="xz"" >> ${work_dir}/${install_dir}/etc/mkinitcpio.conf
