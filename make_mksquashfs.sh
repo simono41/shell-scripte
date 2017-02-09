@@ -68,7 +68,7 @@ mkdir ${work_dir}/iso/${install_dir}/boot/syslinux
 
 cp -R ${work_dir}/airootfs/usr/lib/syslinux/bios/* ${work_dir}/iso/${install_dir}/boot/syslinux/
 cp ${work_dir}/airootfs/boot/initramfs-linux.img ${work_dir}/iso/arch/boot/${arch}/archiso.img
-cp ${work_dir}/airootfs/boot/vmlinuz-linux ${work_dir}/iso/arch/boot/${arch}/
+cp ${work_dir}/airootfs/boot/vmlinuz-linux ${work_dir}/iso/arch/boot/${arch}/vmlinuz
 cp ${work_dir}/airootfs/usr/lib/syslinux/bios/isolinux.bin ${work_dir}/iso/isolinux/
 cp ${work_dir}/airootfs/usr/lib/syslinux/bios/isohdpfx.bin ${work_dir}/iso/isolinux/
 cp ${work_dir}/airootfs/usr/lib/syslinux/bios/ldlinux.c32 ${work_dir}/iso/isolinux/
@@ -87,14 +87,14 @@ fi
 
 echo "DEFAULT menu.c32" > ${work_dir}/iso/${install_dir}/boot/syslinux/syslinux.cfg
 echo "PROMPT 0" >> ${work_dir}/iso/${install_dir}/boot/syslinux/syslinux.cfg
-echo "MENU TITLE ${iso_name}" >> ${work_dir}/iso/${install_dir}/boot/syslinux/syslinux.cfg
+echo "MENU TITLE ${iso_label}" >> ${work_dir}/iso/${install_dir}/boot/syslinux/syslinux.cfg
 echo "TIMEOUT 300" >> ${work_dir}/iso/${install_dir}/boot/syslinux/syslinux.cfg
 echo "" >> ${work_dir}/iso/${install_dir}/boot/syslinux/syslinux.cfg
 echo "LABEL arch" >> ${work_dir}/iso/${install_dir}/boot/syslinux/syslinux.cfg
-echo "MENU LABEL ${iso_name}" >> ${work_dir}/iso/${install_dir}/boot/syslinux/syslinux.cfg
-echo "LINUX ../x86_64/vmlinuz-linux" >> ${work_dir}/iso/${install_dir}/boot/syslinux/syslinux.cfg
+echo "MENU LABEL ${iso_label}" >> ${work_dir}/iso/${install_dir}/boot/syslinux/syslinux.cfg
+echo "LINUX ../x86_64/vmlinuz" >> ${work_dir}/iso/${install_dir}/boot/syslinux/syslinux.cfg
 echo "INITRD ../x86_64/archiso.img" >> ${work_dir}/iso/${install_dir}/boot/syslinux/syslinux.cfg
-echo "APPEND archisolabel=${iso_name}" >> ${work_dir}/iso/${install_dir}/boot/syslinux/syslinux.cfg
+echo "APPEND archisolabel=${iso_label}" >> ${work_dir}/iso/${install_dir}/boot/syslinux/syslinux.cfg
 echo "" >> ${work_dir}/iso/${install_dir}/boot/syslinux/syslinux.cfg
 echo "ONTIMEOUT arch" >> ${work_dir}/iso/${install_dir}/boot/syslinux/syslinux.cfg
 
@@ -114,8 +114,9 @@ mkfs.fat -n ARCHISO_EFI ${work_dir}/iso/EFI/archiso/efiboot.img
 mkdir ${work_dir}/efiboot
 mount ${work_dir}/iso/EFI/archiso/efiboot.img ${work_dir}/efiboot
 
+mkdir ${work_dir}/efiboot/EFI
 mkdir ${work_dir}/efiboot/EFI/archiso
-cp ${work_dir}/iso/${install_dir}/boot/${arch}/vmlinuz-linux ${work_dir}/efiboot/EFI/archiso/vmlinuz.efi
+cp ${work_dir}/iso/${install_dir}/boot/${arch}/vmlinuz ${work_dir}/efiboot/EFI/archiso/vmlinuz.efi
 cp ${work_dir}/iso/${install_dir}/boot/${arch}/archiso.img ${work_dir}/efiboot/EFI/archiso/archiso.img
 
 cp ${work_dir}/airootfs/boot/intel-ucode.img ${work_dir}/iso/${install_dir}/boot/intel_ucode.img
@@ -134,10 +135,10 @@ cd ${script_path}
 wget -c https://raw.githubusercontent.com/simono41/archiso/master/configs/releng/efiboot/loader/entries/uefi-shell-v1-x86_64.conf
 wget -c https://raw.githubusercontent.com/simono41/archiso/master/configs/releng/efiboot/loader/entries/uefi-shell-v2-x86_64.conf
 wget -c https://raw.githubusercontent.com/simono41/archiso/master/configs/releng/efiboot/loader/loader.conf
-cp loader.conf ${work_dir}/efiboot/loader/
-cp uefi-shell-v2-x86_64.conf ${work_dir}/efiboot/loader/entries/
-cp uefi-shell-v1-x86_64.conf ${work_dir}/efiboot/loader/entries/
 cd ..
+cp ${script_path}/loader.conf ${work_dir}/efiboot/loader/
+cp ${script_path}/uefi-shell-v2-x86_64.conf ${work_dir}/efiboot/loader/entries/
+cp ${script_path}/uefi-shell-v1-x86_64.conf ${work_dir}/efiboot/loader/entries/
 
 wget -c https://raw.githubusercontent.com/simono41/archiso/master/configs/releng/efiboot/loader/entries/archiso-x86_64-cd.conf
 
@@ -150,17 +151,12 @@ cp ${work_dir}/iso/EFI/shellx64_v1.efi ${work_dir}/efiboot/EFI/
 umount -d ${work_dir}/efiboot
 
 mkdir ${work_dir}/iso/EFI/boot
-cp ${script_path}/efiboot/loader/loader.conf ${work_dir}/iso/loader/
-cp ${script_path}/efiboot/loader/entries/uefi-shell-v2-x86_64.conf ${work_dir}/iso/loader/entries/
-cp ${script_path}/efiboot/loader/entries/uefi-shell-v1-x86_64.conf ${work_dir}/iso/loader/entries/
-
 mkdir ${work_dir}/iso/loader
 mkdir ${work_dir}/iso/loader/entries
-cd ${script_path}
-cp uefi-shell-v1-x86_64.conf ${work_dir}/iso/loader/entries/uefi-shell-v1-x86_64.conf
-cp uefi-shell-v2-x86_64.conf ${work_dir}/iso/loader/entries/uefi-shell-v2-x86_64.conf
-cp loader.conf ${work_dir}/iso/loader/loader.conf
-cd ..
+
+cp ${script_path}/uefi-shell-v1-x86_64.conf ${work_dir}/iso/loader/entries/uefi-shell-v1-x86_64.conf
+cp ${script_path}/uefi-shell-v2-x86_64.conf ${work_dir}/iso/loader/entries/uefi-shell-v2-x86_64.conf
+cp ${script_path}/loader.conf ${work_dir}/iso/loader/loader.conf
 
 wget -c https://raw.githubusercontent.com/simono41/archiso/master/configs/releng/efiboot/loader/entries/archiso-x86_64-usb.conf
 
@@ -190,5 +186,5 @@ xorriso -as mkisofs \
 -e EFI/archiso/efiboot.img \
 -no-emul-boot \
 -isohybrid-gpt-basdat \
--output ${out_dir}/arch-${iso_label}-$(date "+%y.%m.%d")-${arch}.iso ${work_dir}/iso/
+-output ${out_dir}/arch-${iso_name}-$(date "+%y.%m.%d")-${arch}.iso ${work_dir}/iso/
 fi
