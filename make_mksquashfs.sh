@@ -1,10 +1,6 @@
 #!/bin/bash
 
-pacman -Sy arch-install-scripts xorriso cdrtools squashfs-tools wget
-
-set -e -u
-
-iso_name=SIMON_OS
+iso_name=Simon_OS
 iso_label="SIMON_OS"
 iso_version=$(date +%Y.%m.%d)
 work_dir=work
@@ -15,25 +11,50 @@ script_path=scripts
 
 arch=$(uname -m)
 
+read -p "Soll das System neu aufgebaut werden?: [Y/n] " system
+if [ "$system" != "n" ]
+  then
+echo "Scripte werden heruntergeladen!"
+pacman -Sy arch-install-scripts xorriso cdrtools squashfs-tools wget
+mkdir scripts
 mkdir -p ${work_dir}
 mkdir -p ${work_dir}/airootfs
-pacstrap -c -d -G -M ${work_dir}/airootfs base base-devel syslinux efibootmgr efitools grub
+pacstrap -c -d -G -M ${work_dir}/airootfs base base-devel syslinux efibootmgr efitools grub intel-ucode
 
-curl -o ${work_dir}/airootfs/usr/lib/initcpio/install/archiso https://raw.githubusercontent.com/simono41/archiso/master/archiso/initcpio/install/archiso
-curl -o ${work_dir}/airootfs/usr/lib/initcpio/hooks/archiso https://raw.githubusercontent.com/simono41/archiso/master/archiso/initcpio/hooks/archiso
+cd ${script_path}
+mkdir install
+cd install
+wget -c https://raw.githubusercontent.com/simono41/archiso/master/archiso/initcpio/install/archiso
+cp archiso ../../${work_dir}/airootfs/usr/lib/initcpio/install/archiso
+cd ..
+mkdir hooks
+cd hooks
+wget -c https://raw.githubusercontent.com/simono41/archiso/master/archiso/initcpio/hooks/archiso
+cp archiso ../../${work_dir}/airootfs/usr/lib/initcpio/hooks/archiso
+cd ..
+cd ..
 
-echo "HOOKS="base udev archiso sata filesystems"" > ${work_dir}/airootfs/etc/mkinitcpio.conf
-echo "COMPRESSION="xz"" >> ${work_dir}/airootfs/etc/mkinitcpio.conf
+echo "HOOKS=\"base udev archiso sata filesystems\"" > ${work_dir}/airootfs/etc/mkinitcpio.conf
+echo "COMPRESSION=\"xz\"" >> ${work_dir}/airootfs/etc/mkinitcpio.conf
 
 echo ${iso_name} > ${work_dir}/airootfs/etc/hostname
 
-wget https://raw.githubusercontent.com/simono41/Arch-Install-Script/master/arch-install.sh
-cp arch-install.sh ${work_dir}/airootfs/usr/bin/
+wget -c https://raw.githubusercontent.com/simono41/Arch-Install-Script/master/arch-install.sh
+cp arch-install.sh ${work_dir}/airootfs/usr/bin/arch-install
 chmod +x ${work_dir}/airootfs/usr/bin/arch-install
 
-read -p "Wenn Fertig gebaut dann eingabetaste druecken sonst abrechen mit Steuerung + C!!!"
+echo "Server = http://mirror.23media.de/archlinux/$repo/os/$arch" > ${work_dir}/airootfs/etc/pacman.d/mirrorlist
+
+arch-chroot ${work_dir}/airootfs pacman-key --init
+arch-chroot ${work_dir}/airootfs pacman-key --populate archlinux
+arch-chroot ${work_dir}/airootfs pacman-key --refresh-keys
 
 arch-chroot ${work_dir}/airootfs mkinitcpio -p linux
+  else
+echo "Wird nicht neu aufgebaut!!!"
+echo "Es muss aber vorhanden sein für ein reibenloser Ablauf!!!"
+fi
+read -p "Wenn Fertig gebaut dann eingabetaste druecken sonst abrechen mit Steuerung + C!!!"
 
 # BIOS
 
@@ -45,7 +66,7 @@ mkdir ${work_dir}/iso/${install_dir}/${arch}
 mkdir ${work_dir}/iso/${install_dir}/boot/${arch}
 mkdir ${work_dir}/iso/${install_dir}/boot/syslinux
 
-cp -R ${work_dir}airootfs/usr/lib/syslinux/bios/* ${work_dir}iso/${install_dir}/boot/syslinux/
+cp -R ${work_dir}/airootfs/usr/lib/syslinux/bios/* ${work_dir}iso/${install_dir}/boot/syslinux/
 cp ${work_dir}/airootfs/boot/initramfs-linux.img ${work_dir}/iso/arch/boot/${arch}/archiso.img
 cp ${work_dir}/airootfs/boot/vmlinuz-linux ${work_dir}/iso/arch/boot/${arch}/
 cp ${work_dir}/airootfs/usr/lib/syslinux/bios/isolinux.bin ${work_dir}/iso/isolinux/
@@ -101,18 +122,17 @@ cp ${work_dir}/airootfs/usr/share/efitools/efi/HashTool.efi ${work_dir}/efiboot/
 
 cp ${work_dir}/airootfs/usr/lib/systemd/boot/efi/systemd-bootx64.efi ${work_dir}/efiboot/EFI/boot/loader.efi
 
-mkdir ${script_path}
 cd ${script_path}
-wget https://raw.githubusercontent.com/simono41/archiso/master/configs/releng/efiboot/loader/entries/uefi-shell-v1-x86_64.conf
-wget https://raw.githubusercontent.com/simono41/archiso/master/configs/releng/efiboot/loader/entries/uefi-shell-v2-x86_64.conf
-wget https://raw.githubusercontent.com/simono41/archiso/master/configs/releng/efiboot/loader/loader.conf
+wget -c https://raw.githubusercontent.com/simono41/archiso/master/configs/releng/efiboot/loader/entries/uefi-shell-v1-x86_64.conf
+wget -c https://raw.githubusercontent.com/simono41/archiso/master/configs/releng/efiboot/loader/entries/uefi-shell-v2-x86_64.conf
+wget -c https://raw.githubusercontent.com/simono41/archiso/master/configs/releng/efiboot/loader/loader.conf
 mkdir -p ${work_dir}/efiboot/loader/entries
-cp ${script_path}/efiboot/loader/loader.conf ${work_dir}/efiboot/loader/
-cp ${script_path}/efiboot/loader/entries/uefi-shell-v2-x86_64.conf ${work_dir}/efiboot/loader/entries/
-cp ${script_path}/efiboot/loader/entries/uefi-shell-v1-x86_64.conf ${work_dir}/efiboot/loader/entries/
+cp ${script_path}/loader.conf ${work_dir}/efiboot/loader/
+cp ${script_path}/uefi-shell-v2-x86_64.conf ${work_dir}/efiboot/loader/entries/
+cp ${script_path}/uefi-shell-v1-x86_64.conf ${work_dir}/efiboot/loader/entries/
 cd ..
 
-wget https://raw.githubusercontent.com/simono41/archiso/master/configs/releng/efiboot/loader/entries/archiso-x86_64-cd.conf
+wget -c https://raw.githubusercontent.com/simono41/archiso/master/configs/releng/efiboot/loader/entries/archiso-x86_64-cd.conf
 
 sed "s|%ARCHISO_LABEL%|${iso_label}|g;
 s|%INSTALL_DIR%|${install_dir}|g" \
@@ -131,11 +151,13 @@ cd ..
 
 mkdir -p ${work_dir}/iso/loader
 mkdir -p ${work_dir}/iso/loader/entries
+cd ${script_path}
 cp uefi-shell-v1-x86_64.conf ${work_dir}/iso/loader/entries/uefi-shell-v1-x86_64.conf
 cp uefi-shell-v2-x86_64.conf ${work_dir}/iso/loader/entries/uefi-shell-v2-x86_64.conf
 cp loader.conf ${work_dir}/iso/loader/loader.conf
+cd ..
 
-wget -o https://raw.githubusercontent.com/simono41/archiso/master/configs/releng/efiboot/loader/entries/archiso-x86_64-usb.conf
+wget -c https://raw.githubusercontent.com/simono41/archiso/master/configs/releng/efiboot/loader/entries/archiso-x86_64-usb.conf
 
 sed "s|%ARCHISO_LABEL%|${iso_label}|g;
 s|%INSTALL_DIR%|${install_dir}|g" \
