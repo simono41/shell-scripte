@@ -9,7 +9,12 @@ work_dir=work
 out_dir=out
 install_dir=arch
 
-pacstrap -i ${work_dir}/${install_dir} base base-devel syslinux efibootmgr
+mkdir -p ${work_dir}
+mkdir -p ${work_dir}/airootfs
+pacstrap -i ${work_dir}/airootfs base base-devel syslinux efibootmgr efitools
+
+curl -o ${work_dir}/airootfs/usr/lib/initcpio/install/archiso https://raw.githubusercontent.com/simono41/archiso/master/archiso/initcpio/install/archiso
+curl -o ${work_dir}/airootfs/usr/lib/initcpio/hooks/archiso https://raw.githubusercontent.com/simono41/archiso/master/archiso/initcpio/hooks/archiso
 
 echo "Bitte fuer aenderungen jetzt abrechen!!!"
 sleep 10
@@ -29,18 +34,18 @@ mkdir ${work_dir}/iso/arch/x86_64
 mkdir ${work_dir}/iso/arch/boot/x86_64
 mkdir ${work_dir}/iso/arch/boot/syslinux
 
-cp -R ${work_dir}/${install_dir}/usr/lib/syslinux/bios/* ${work_dir}iso/arch/boot/syslinux/
-cp ${work_dir}/${install_dir}/boot/initramfs-linux.img ${work_dir}/iso/arch/boot/x86_64/
-cp ${work_dir}/${install_dir}/boot/initramfs-linux-fallback.img w${work_dir}/iso/arch/boot/x86_64/
-cp ${work_dir}/${install_dir}/boot/vmlinuz-linux ${work_dir}/iso/arch/boot/x86_64/
-cp ${work_dir}/${install_dir}/usr/lib/syslinux/bios/isolinux.bin ${work_dir}/iso/isolinux/
-cp ${work_dir}/${install_dir}/usr/lib/syslinux/bios/isohdpfx.bin ${work_dir}/iso/isolinux/
-cp ${work_dir}/${install_dir}/usr/lib/syslinux/bios/ldlinux.c32 ${work_dir}/iso/isolinux/
+cp -R ${work_dir}airootfs/usr/lib/syslinux/bios/* ${work_dir}iso/arch/boot/syslinux/
+cp ${work_dir}/airootfs/boot/initramfs-linux.img ${work_dir}/iso/arch/boot/x86_64/
+cp ${work_dir}/airootfs/boot/initramfs-linux-fallback.img w${work_dir}/iso/arch/boot/x86_64/
+cp ${work_dir}/airootfs/boot/vmlinuz-linux ${work_dir}/iso/arch/boot/x86_64/
+cp ${work_dir}/airootfs/usr/lib/syslinux/bios/isolinux.bin ${work_dir}/iso/isolinux/
+cp ${work_dir}/airootfs/usr/lib/syslinux/bios/isohdpfx.bin ${work_dir}/iso/isolinux/
+cp ${work_dir}/airootfs/usr/lib/syslinux/bios/ldlinux.c32 ${work_dir}/iso/isolinux/
 
-arch-chroot ${work_dir}/${install_dir} LANG=C pacman -Sl | awk '/\[installed\]$/ {print $1 "/" $2 "-" $3}' > /pkglist.txt
-cp ${work_dir}/${install_dir}/pkglist.txt ${work_dir}/iso/arch/x86_64/
-arch-chroot ${work_dir}/${install_dir} pacman -Scc
-mksquashfs ${work_dir}/${install_dir} ${work_dir}/iso/arch/x86_64/airootfs.sfs -noappend -comp xz
+arch-chroot ${work_dir}/airootfs LANG=C pacman -Sl | awk '/\[installed\]$/ {print $1 "/" $2 "-" $3}' > /pkglist.txt
+cp ${work_dir}/airootfs/pkglist.txt ${work_dir}/iso/arch/x86_64/
+arch-chroot ${work_dir}/airootfs pacman -Scc
+mksquashfs ${work_dir}/airootfs ${work_dir}/iso/arch/x86_64/airootfs.sfs -noappend -comp xz
 md5sum ${work_dir}/iso/arch/x86_64/airootfs.sfs > ${work_dir}/iso/arch/x86_64/airootfs.md5
 
 echo "DEFAULT menu.c32" > ${work_dir}/iso/arch/boot/syslinux/syslinux.cfg
@@ -79,15 +84,16 @@ cp ${work_dir}/iso/${install_dir}/boot/x86_64/archiso.img ${work_dir}/efiboot/EF
 cp ${work_dir}/iso/${install_dir}/boot/intel_ucode.img ${work_dir}/efiboot/EFI/archiso/intel_ucode.img
 
 mkdir -p ${work_dir}/efiboot/EFI/boot
-cp ${work_dir}/x86_64/airootfs/usr/share/efitools/efi/PreLoader.efi ${work_dir}/efiboot/EFI/boot/bootx64.efi
+cp ${work_dir}/airootfs/usr/share/efitools/efi/PreLoader.efi ${work_dir}/efiboot/EFI/boot/bootx64.efi
 
-cp ${work_dir}/x86_64/airootfs/usr/share/efitools/efi/HashTool.efi ${work_dir}/efiboot/EFI/boot/
+cp ${work_dir}/airootfs/usr/share/efitools/efi/HashTool.efi ${work_dir}/efiboot/EFI/boot/
 
-cp ${work_dir}/x86_64/airootfs/usr/lib/systemd/boot/efi/systemd-bootx64.efi ${work_dir}/efiboot/EFI/boot/loader.efi
+cp ${work_dir}/airootfs/usr/lib/systemd/boot/efi/systemd-bootx64.efi ${work_dir}/efiboot/EFI/boot/loader.efi
 mkdir -p ${work_dir}/efiboot/loader/entries
-cp ${script_path}/efiboot/loader/loader.conf ${work_dir}/efiboot/loader/
-cp ${script_path}/efiboot/loader/entries/uefi-shell-v2-x86_64.conf ${work_dir}/efiboot/loader/entries/
-cp ${script_path}/efiboot/loader/entries/uefi-shell-v1-x86_64.conf ${work_dir}/efiboot/loader/entries/
+
+curl -o ${work_dir}/iso/loader/entries/uefi-shell-v1-x86_64.conf https://raw.githubusercontent.com/simono41/archiso/master/configs/releng/efiboot/loader/entries/uefi-shell-v1-x86_64.conf
+curl -o ${work_dir}/iso/loader/entries/uefi-shell-v2-x86_64.conf https://raw.githubusercontent.com/simono41/archiso/master/configs/releng/efiboot/loader/entries/uefi-shell-v2-x86_64.conf
+curl -o ${work_dir}/iso/loader/loader.conf https://raw.githubusercontent.com/simono41/archiso/master/configs/releng/efiboot/loader/loader.conf
 
 curl -o ./archiso-x86_64-cd.conf https://raw.githubusercontent.com/simono41/archiso/master/configs/releng/efiboot/loader/entries/archiso-x86_64-cd.conf
 
@@ -105,10 +111,11 @@ cp ${work_dir}/x86_64/airootfs/usr/share/efitools/efi/HashTool.efi ${work_dir}/i
 
 cp ${work_dir}/x86_64/airootfs/usr/lib/systemd/boot/efi/systemd-bootx64.efi ${work_dir}/iso/EFI/boot/loader.efi
 
+mkdir -p ${work_dir}/iso/loader
 mkdir -p ${work_dir}/iso/loader/entries
-cp ${script_path}/efiboot/loader/loader.conf ${work_dir}/iso/loader/
-cp ${script_path}/efiboot/loader/entries/uefi-shell-v2-x86_64.conf ${work_dir}/iso/loader/entries/
-cp ${script_path}/efiboot/loader/entries/uefi-shell-v1-x86_64.conf ${work_dir}/iso/loader/entries/
+curl -o ${work_dir}/iso/loader/entries/uefi-shell-v1-x86_64.conf https://raw.githubusercontent.com/simono41/archiso/master/configs/releng/efiboot/loader/entries/uefi-shell-v1-x86_64.conf
+curl -o ${work_dir}/iso/loader/entries/uefi-shell-v2-x86_64.conf https://raw.githubusercontent.com/simono41/archiso/master/configs/releng/efiboot/loader/entries/uefi-shell-v2-x86_64.conf
+curl -o ${work_dir}/iso/loader/loader.conf https://raw.githubusercontent.com/simono41/archiso/master/configs/releng/efiboot/loader/loader.conf
 
 curl -o ./archiso-x86_64-usb.conf https://raw.githubusercontent.com/simono41/archiso/master/configs/releng/efiboot/loader/entries/archiso-x86_64-usb.conf
 
@@ -120,12 +127,6 @@ archiso-x86_64-usb.conf > ${work_dir}/iso/loader/entries/archiso-x86_64.conf
 curl -o ${work_dir}/iso/EFI/shellx64_v2.efi https://raw.githubusercontent.com/tianocore/edk2/master/ShellBinPkg/UefiShell/X64/Shell.efi
 # EFI Shell 1.0 for non UEFI 2.3+
 curl -o ${work_dir}/iso/EFI/shellx64_v1.efi https://raw.githubusercontent.com/tianocore/edk2/master/EdkShellBinPkg/FullShell/X64/Shell_Full.efi
-
-curl -o ${work_dir}/iso/loader/entries/uefi-shell-v1-x86_64.conf https://raw.githubusercontent.com/simono41/archiso/master/configs/releng/efiboot/loader/entries/uefi-shell-v1-x86_64.conf
-
-curl -o ${work_dir}/iso/loader/entries/uefi-shell-v2-x86_64.conf https://raw.githubusercontent.com/simono41/archiso/master/configs/releng/efiboot/loader/entries/uefi-shell-v2-x86_64.conf
-
-curl -o ${work_dir}/iso/loader/loader.conf https://raw.githubusercontent.com/simono41/archiso/master/configs/releng/efiboot/loader/loader.conf
 
 read -p "Soll das Image jetzt gemacht werden? [Y/n] " image
 
