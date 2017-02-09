@@ -19,6 +19,8 @@ curl -o ${work_dir}/airootfs/usr/lib/initcpio/hooks/archiso https://raw.githubus
 echo "HOOKS="base udev archiso sata filesystems"" > ${work_dir}/${install_dir}/etc/mkinitcpio.conf
 echo "COMPRESSION="xz"" >> ${work_dir}/${install_dir}/etc/mkinitcpio.conf
 
+echo ${iso_name} > ${work_dir}/airootfs/etc/hostname
+
 read -p "Wenn Fertig gebaut dann eingabetaste druecken sonst abrechen mit Steuerung + C!!!"
 
 arch-chroot ${work_dir}/airootfs mkinitcpio -p linux
