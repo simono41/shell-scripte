@@ -25,6 +25,9 @@ echo "COMPRESSION="xz"" >> ${work_dir}/airootfs/etc/mkinitcpio.conf
 
 echo ${iso_name} > ${work_dir}/airootfs/etc/hostname
 
+curl -o ${work_dir}/airootfs/usr/bin/arch-install https://raw.githubusercontent.com/simono41/Arch-Install-Script/master/arch-install.sh
+chmod +x ${work_dir}/airootfs/usr/bin/arch-install
+
 read -p "Wenn Fertig gebaut dann eingabetaste druecken sonst abrechen mit Steuerung + C!!!"
 
 arch-chroot ${work_dir}/airootfs mkinitcpio -p linux
