@@ -1,6 +1,6 @@
 #!/bin/bash
 
-iso_name=Simon_OS
+iso_name=simon_os
 iso_label="SIMON_OS"
 iso_version=$(date +%Y.%m.%d)
 work_dir=work
@@ -43,7 +43,7 @@ wget -c https://raw.githubusercontent.com/simono41/Arch-Install-Script/master/ar
 cp arch-install.sh ${work_dir}/airootfs/usr/bin/arch-install
 chmod +x ${work_dir}/airootfs/usr/bin/arch-install
 
-echo "Server = http://mirror.23media.de/archlinux/$repo/os/$arch" > ${work_dir}/airootfs/etc/pacman.d/mirrorlist
+echo "Server = http://mirror.23media.de/archlinux/\$repo/os/\$arch" > ${work_dir}/airootfs/etc/pacman.d/mirrorlist
 
 arch-chroot ${work_dir}/airootfs pacman-key --init
 arch-chroot ${work_dir}/airootfs pacman-key --populate archlinux
@@ -129,6 +129,7 @@ cp ${work_dir}/airootfs/usr/share/efitools/efi/HashTool.efi ${work_dir}/efiboot/
 
 cp ${work_dir}/airootfs/usr/lib/systemd/boot/efi/systemd-bootx64.efi ${work_dir}/efiboot/EFI/boot/loader.efi
 
+mkdir ${work_dir}/efiboot/loader
 mkdir ${work_dir}/efiboot/loader/entries
 
 cd ${script_path}
