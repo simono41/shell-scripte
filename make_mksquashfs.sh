@@ -34,8 +34,7 @@ mkdir ${work_dir}/iso/arch/boot/x86_64
 mkdir ${work_dir}/iso/arch/boot/syslinux
 
 cp -R ${work_dir}airootfs/usr/lib/syslinux/bios/* ${work_dir}iso/arch/boot/syslinux/
-cp ${work_dir}/airootfs/boot/initramfs-linux.img ${work_dir}/iso/arch/boot/x86_64/
-cp ${work_dir}/airootfs/boot/initramfs-linux-fallback.img w${work_dir}/iso/arch/boot/x86_64/
+cp ${work_dir}/airootfs/boot/initramfs-linux.img ${work_dir}/iso/arch/boot/x86_64/archiso.img
 cp ${work_dir}/airootfs/boot/vmlinuz-linux ${work_dir}/iso/arch/boot/x86_64/
 cp ${work_dir}/airootfs/usr/lib/syslinux/bios/isolinux.bin ${work_dir}/iso/isolinux/
 cp ${work_dir}/airootfs/usr/lib/syslinux/bios/isohdpfx.bin ${work_dir}/iso/isolinux/
@@ -55,7 +54,7 @@ echo "" >> ${work_dir}/iso/arch/boot/syslinux/syslinux.cfg
 echo "LABEL arch" >> ${work_dir}/iso/arch/boot/syslinux/syslinux.cfg
 echo "MENU LABEL ${iso_name}" >> ${work_dir}/iso/arch/boot/syslinux/syslinux.cfg
 echo "LINUX ../x86_64/vmlinuz-linux" >> ${work_dir}/iso/arch/boot/syslinux/syslinux.cfg
-echo "INITRD ../x86_64/initramfs-linux-fallback.img" >> ${work_dir}/iso/arch/boot/syslinux/syslinux.cfg
+echo "INITRD ../x86_64/archiso.img" >> ${work_dir}/iso/arch/boot/syslinux/syslinux.cfg
 echo "APPEND archisolabel=${iso_name}" >> ${work_dir}/iso/arch/boot/syslinux/syslinux.cfg
 echo "" >> ${work_dir}/iso/arch/boot/syslinux/syslinux.cfg
 echo "ONTIMEOUT arch" >> ${work_dir}/iso/arch/boot/syslinux/syslinux.cfg
