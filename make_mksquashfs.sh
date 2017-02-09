@@ -11,7 +11,7 @@ install_dir=arch
 
 mkdir -p ${work_dir}
 mkdir -p ${work_dir}/airootfs
-pacstrap -i ${work_dir}/airootfs base base-devel syslinux efibootmgr efitools
+pacstrap -i ${work_dir}/airootfs base base-devel syslinux efibootmgr efitools grub
 
 curl -o ${work_dir}/airootfs/usr/lib/initcpio/install/archiso https://raw.githubusercontent.com/simono41/archiso/master/archiso/initcpio/install/archiso
 curl -o ${work_dir}/airootfs/usr/lib/initcpio/hooks/archiso https://raw.githubusercontent.com/simono41/archiso/master/archiso/initcpio/hooks/archiso
