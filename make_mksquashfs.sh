@@ -1,5 +1,7 @@
 #!/bin/bash
 
+pacman -Sy arch-install-scripts xorriso cdrtools squashfs-tools 
+
 set -e -u
 
 iso_name=SIMON_OS
