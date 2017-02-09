@@ -1,6 +1,6 @@
 #!/bin/bash
 
-pacman -Sy arch-install-scripts xorriso cdrtools squashfs-tools 
+pacman -Sy arch-install-scripts xorriso cdrtools squashfs-tools wget
 
 set -e -u
 
@@ -10,6 +10,8 @@ iso_version=$(date +%Y.%m.%d)
 work_dir=work
 out_dir=out
 install_dir=arch
+
+script_path=scripts
 
 arch=$(uname -m)
 
@@ -25,7 +27,8 @@ echo "COMPRESSION="xz"" >> ${work_dir}/airootfs/etc/mkinitcpio.conf
 
 echo ${iso_name} > ${work_dir}/airootfs/etc/hostname
 
-curl -o ${work_dir}/airootfs/usr/bin/arch-install https://raw.githubusercontent.com/simono41/Arch-Install-Script/master/arch-install.sh
+wget https://raw.githubusercontent.com/simono41/Arch-Install-Script/master/arch-install.sh
+cp arch-install.sh ${work_dir}/airootfs/usr/bin/
 chmod +x ${work_dir}/airootfs/usr/bin/arch-install
 
 read -p "Wenn Fertig gebaut dann eingabetaste druecken sonst abrechen mit Steuerung + C!!!"
@@ -97,13 +100,19 @@ cp ${work_dir}/airootfs/usr/share/efitools/efi/PreLoader.efi ${work_dir}/efiboot
 cp ${work_dir}/airootfs/usr/share/efitools/efi/HashTool.efi ${work_dir}/efiboot/EFI/boot/
 
 cp ${work_dir}/airootfs/usr/lib/systemd/boot/efi/systemd-bootx64.efi ${work_dir}/efiboot/EFI/boot/loader.efi
+
+mkdir ${script_path}
+cd ${script_path}
+wget https://raw.githubusercontent.com/simono41/archiso/master/configs/releng/efiboot/loader/entries/uefi-shell-v1-x86_64.conf
+wget https://raw.githubusercontent.com/simono41/archiso/master/configs/releng/efiboot/loader/entries/uefi-shell-v2-x86_64.conf
+wget https://raw.githubusercontent.com/simono41/archiso/master/configs/releng/efiboot/loader/loader.conf
 mkdir -p ${work_dir}/efiboot/loader/entries
+cp ${script_path}/efiboot/loader/loader.conf ${work_dir}/efiboot/loader/
+cp ${script_path}/efiboot/loader/entries/uefi-shell-v2-x86_64.conf ${work_dir}/efiboot/loader/entries/
+cp ${script_path}/efiboot/loader/entries/uefi-shell-v1-x86_64.conf ${work_dir}/efiboot/loader/entries/
+cd ..
 
-curl -o ${work_dir}/iso/loader/entries/uefi-shell-v1-x86_64.conf https://raw.githubusercontent.com/simono41/archiso/master/configs/releng/efiboot/loader/entries/uefi-shell-v1-x86_64.conf
-curl -o ${work_dir}/iso/loader/entries/uefi-shell-v2-x86_64.conf https://raw.githubusercontent.com/simono41/archiso/master/configs/releng/efiboot/loader/entries/uefi-shell-v2-x86_64.conf
-curl -o ${work_dir}/iso/loader/loader.conf https://raw.githubusercontent.com/simono41/archiso/master/configs/releng/efiboot/loader/loader.conf
-
-curl -o ./archiso-x86_64-cd.conf https://raw.githubusercontent.com/simono41/archiso/master/configs/releng/efiboot/loader/entries/archiso-x86_64-cd.conf
+wget https://raw.githubusercontent.com/simono41/archiso/master/configs/releng/efiboot/loader/entries/archiso-x86_64-cd.conf
 
 sed "s|%ARCHISO_LABEL%|${iso_label}|g;
 s|%INSTALL_DIR%|${install_dir}|g" \
@@ -114,18 +123,19 @@ cp ${work_dir}/iso/EFI/shellx64_v1.efi ${work_dir}/efiboot/EFI/
 umount -d ${work_dir}/efiboot
 
 mkdir -p ${work_dir}/iso/EFI/boot
-cp ${work_dir}/airootfs/usr/share/efitools/efi/PreLoader.efi ${work_dir}/iso/EFI/boot/bootx64.efi
-cp ${work_dir}/airootfs/usr/share/efitools/efi/HashTool.efi ${work_dir}/iso/EFI/boot/
-
-cp ${work_dir}/airootfs/usr/lib/systemd/boot/efi/systemd-bootx64.efi ${work_dir}/iso/EFI/boot/loader.efi
+cd ${script_path}
+cp ${script_path}/efiboot/loader/loader.conf ${work_dir}/iso/loader/
+cp ${script_path}/efiboot/loader/entries/uefi-shell-v2-x86_64.conf ${work_dir}/iso/loader/entries/
+cp ${script_path}/efiboot/loader/entries/uefi-shell-v1-x86_64.conf ${work_dir}/iso/loader/entries/
+cd ..
 
 mkdir -p ${work_dir}/iso/loader
 mkdir -p ${work_dir}/iso/loader/entries
-curl -o ${work_dir}/iso/loader/entries/uefi-shell-v1-x86_64.conf https://raw.githubusercontent.com/simono41/archiso/master/configs/releng/efiboot/loader/entries/uefi-shell-v1-x86_64.conf
-curl -o ${work_dir}/iso/loader/entries/uefi-shell-v2-x86_64.conf https://raw.githubusercontent.com/simono41/archiso/master/configs/releng/efiboot/loader/entries/uefi-shell-v2-x86_64.conf
-curl -o ${work_dir}/iso/loader/loader.conf https://raw.githubusercontent.com/simono41/archiso/master/configs/releng/efiboot/loader/loader.conf
+cp uefi-shell-v1-x86_64.conf ${work_dir}/iso/loader/entries/uefi-shell-v1-x86_64.conf
+cp uefi-shell-v2-x86_64.conf ${work_dir}/iso/loader/entries/uefi-shell-v2-x86_64.conf
+cp loader.conf ${work_dir}/iso/loader/loader.conf
 
-curl -o ./archiso-x86_64-usb.conf https://raw.githubusercontent.com/simono41/archiso/master/configs/releng/efiboot/loader/entries/archiso-x86_64-usb.conf
+wget -o https://raw.githubusercontent.com/simono41/archiso/master/configs/releng/efiboot/loader/entries/archiso-x86_64-usb.conf
 
 sed "s|%ARCHISO_LABEL%|${iso_label}|g;
 s|%INSTALL_DIR%|${install_dir}|g" \
