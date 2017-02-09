@@ -9,10 +9,13 @@ work_dir=work
 out_dir=out
 install_dir=arch
 
-pacstrap -i ${work_dir}/airootfs base base-devel syslinux efibootmgr
+pacstrap -i ${work_dir}/${install_dir} base base-devel syslinux efibootmgr
 
-echo "HOOKS="base udev archiso sata filesystems"" > ${work_dir}/airootfs/etc/mkinitcpio.conf
-echo "COMPRESSION="xz"" >> ${work_dir}/airootfs/etc/mkinitcpio.conf
+echo "Bitte fuer aenderungen jetzt abrechen!!!"
+sleep 10
+
+echo "HOOKS="base udev archiso sata filesystems"" > ${work_dir}/${install_dir}/etc/mkinitcpio.conf
+echo "COMPRESSION="xz"" >> ${work_dir}/${install_dir}/etc/mkinitcpio.conf
 
 arch-chroot ${work_dir}/airootfs mkinitcpio -p linux
 
@@ -26,18 +29,18 @@ mkdir ${work_dir}/iso/arch/x86_64
 mkdir ${work_dir}/iso/arch/boot/x86_64
 mkdir ${work_dir}/iso/arch/boot/syslinux
 
-cp -R ${work_dir}/airootfs/usr/lib/syslinux/bios/* ${work_dir}iso/arch/boot/syslinux/
-cp ${work_dir}/airootfs/boot/initramfs-linux.img ${work_dir}/iso/arch/boot/x86_64/
-cp ${work_dir}/airootfs/boot/initramfs-linux-fallback.img w${work_dir}/iso/arch/boot/x86_64/
-cp ${work_dir}/airootfs/boot/vmlinuz-linux ${work_dir}/iso/arch/boot/x86_64/
-cp ${work_dir}/airootfs/usr/lib/syslinux/bios/isolinux.bin ${work_dir}/iso/isolinux/
-cp ${work_dir}/airootfs/usr/lib/syslinux/bios/isohdpfx.bin ${work_dir}/iso/isolinux/
-cp ${work_dir}/airootfs/usr/lib/syslinux/bios/ldlinux.c32 ${work_dir}/iso/isolinux/
+cp -R ${work_dir}/${install_dir}/usr/lib/syslinux/bios/* ${work_dir}iso/arch/boot/syslinux/
+cp ${work_dir}/${install_dir}/boot/initramfs-linux.img ${work_dir}/iso/arch/boot/x86_64/
+cp ${work_dir}/${install_dir}/boot/initramfs-linux-fallback.img w${work_dir}/iso/arch/boot/x86_64/
+cp ${work_dir}/${install_dir}/boot/vmlinuz-linux ${work_dir}/iso/arch/boot/x86_64/
+cp ${work_dir}/${install_dir}/usr/lib/syslinux/bios/isolinux.bin ${work_dir}/iso/isolinux/
+cp ${work_dir}/${install_dir}/usr/lib/syslinux/bios/isohdpfx.bin ${work_dir}/iso/isolinux/
+cp ${work_dir}/${install_dir}/usr/lib/syslinux/bios/ldlinux.c32 ${work_dir}/iso/isolinux/
 
-arch-chroot ${work_dir}/airootfs LANG=C pacman -Sl | awk '/\[installed\]$/ {print $1 "/" $2 "-" $3}' > /pkglist.txt
-cp ${work_dir}/airootfs/pkglist.txt ${work_dir}/iso/arch/x86_64/
-arch-chroot ${work_dir}/airootfs pacman -Scc
-mksquashfs ${work_dir}/airootfs ${work_dir}/iso/arch/x86_64/airootfs.sfs -noappend -comp xz
+arch-chroot ${work_dir}/${install_dir} LANG=C pacman -Sl | awk '/\[installed\]$/ {print $1 "/" $2 "-" $3}' > /pkglist.txt
+cp ${work_dir}/${install_dir}/pkglist.txt ${work_dir}/iso/arch/x86_64/
+arch-chroot ${work_dir}/${install_dir} pacman -Scc
+mksquashfs ${work_dir}/${install_dir} ${work_dir}/iso/arch/x86_64/airootfs.sfs -noappend -comp xz
 md5sum ${work_dir}/iso/arch/x86_64/airootfs.sfs > ${work_dir}/iso/arch/x86_64/airootfs.md5
 
 echo "DEFAULT menu.c32" > ${work_dir}/iso/arch/boot/syslinux/syslinux.cfg
@@ -60,26 +63,6 @@ echo "  CONFIG /arch/boot/syslinux/syslinux.cfg" >> ${work_dir}/iso/isolinux/iso
 echo "  APPEND /arch/boot/syslinux/" >> ${work_dir}/iso/isolinux/isolinux.cfg
 
 # EFI
-
-mkdir -p ${work_dir}/iso/EFI/boot
-cp ${work_dir}/x86_64/airootfs/usr/share/efitools/efi/PreLoader.efi ${work_dir}/iso/EFI/boot/bootx64.efi
-cp ${work_dir}/x86_64/airootfs/usr/share/efitools/efi/HashTool.efi ${work_dir}/iso/EFI/boot/
-
-cp ${work_dir}/x86_64/airootfs/usr/lib/systemd/boot/efi/systemd-bootx64.efi ${work_dir}/iso/EFI/boot/loader.efi
-
-mkdir -p ${work_dir}/iso/loader/entries
-cp ${script_path}/efiboot/loader/loader.conf ${work_dir}/iso/loader/
-cp ${script_path}/efiboot/loader/entries/uefi-shell-v2-x86_64.conf ${work_dir}/iso/loader/entries/
-cp ${script_path}/efiboot/loader/entries/uefi-shell-v1-x86_64.conf ${work_dir}/iso/loader/entries/
-
-sed "s|%ARCHISO_LABEL%|${iso_label}|g;
- s|%INSTALL_DIR%|${install_dir}|g" \
-${script_path}/efiboot/loader/entries/archiso-x86_64-usb.conf > ${work_dir}/iso/loader/entries/archiso-x86_64.conf
-
-# EFI Shell 2.0 for UEFI 2.3+
-curl -o ${work_dir}/iso/EFI/shellx64_v2.efi https://raw.githubusercontent.com/tianocore/edk2/master/ShellBinPkg/UefiShell/X64/Shell.efi
-# EFI Shell 1.0 for non UEFI 2.3+
-curl -o ${work_dir}/iso/EFI/shellx64_v1.efi https://raw.githubusercontent.com/tianocore/edk2/master/EdkShellBinPkg/FullShell/X64/Shell_Full.efi
 
 mkdir -p  ${work_dir}/iso/EFI
 mkdir -p ${work_dir}/iso/EFI/archiso
@@ -106,13 +89,43 @@ cp ${script_path}/efiboot/loader/loader.conf ${work_dir}/efiboot/loader/
 cp ${script_path}/efiboot/loader/entries/uefi-shell-v2-x86_64.conf ${work_dir}/efiboot/loader/entries/
 cp ${script_path}/efiboot/loader/entries/uefi-shell-v1-x86_64.conf ${work_dir}/efiboot/loader/entries/
 
+curl -o ./archiso-x86_64-cd.conf https://raw.githubusercontent.com/simono41/archiso/master/configs/releng/efiboot/loader/entries/archiso-x86_64-cd.conf
+
 sed "s|%ARCHISO_LABEL%|${iso_label}|g;
 s|%INSTALL_DIR%|${install_dir}|g" \
-./efiboot/loader/entries/archiso-x86_64-cd.conf > ${work_dir}/efiboot/loader/entries/archiso-x86_64.conf
+archiso-x86_64-cd.conf > ${work_dir}/efiboot/loader/entries/archiso-x86_64.conf
 
 cp ${work_dir}/iso/EFI/shellx64_v2.efi ${work_dir}/efiboot/EFI/
 cp ${work_dir}/iso/EFI/shellx64_v1.efi ${work_dir}/efiboot/EFI/
 umount -d ${work_dir}/efiboot
+
+mkdir -p ${work_dir}/iso/EFI/boot
+cp ${work_dir}/x86_64/airootfs/usr/share/efitools/efi/PreLoader.efi ${work_dir}/iso/EFI/boot/bootx64.efi
+cp ${work_dir}/x86_64/airootfs/usr/share/efitools/efi/HashTool.efi ${work_dir}/iso/EFI/boot/
+
+cp ${work_dir}/x86_64/airootfs/usr/lib/systemd/boot/efi/systemd-bootx64.efi ${work_dir}/iso/EFI/boot/loader.efi
+
+mkdir -p ${work_dir}/iso/loader/entries
+cp ${script_path}/efiboot/loader/loader.conf ${work_dir}/iso/loader/
+cp ${script_path}/efiboot/loader/entries/uefi-shell-v2-x86_64.conf ${work_dir}/iso/loader/entries/
+cp ${script_path}/efiboot/loader/entries/uefi-shell-v1-x86_64.conf ${work_dir}/iso/loader/entries/
+
+curl -o ./archiso-x86_64-usb.conf https://raw.githubusercontent.com/simono41/archiso/master/configs/releng/efiboot/loader/entries/archiso-x86_64-usb.conf
+
+sed "s|%ARCHISO_LABEL%|${iso_label}|g;
+s|%INSTALL_DIR%|${install_dir}|g" \
+archiso-x86_64-usb.conf > ${work_dir}/iso/loader/entries/archiso-x86_64.conf
+
+# EFI Shell 2.0 for UEFI 2.3+
+curl -o ${work_dir}/iso/EFI/shellx64_v2.efi https://raw.githubusercontent.com/tianocore/edk2/master/ShellBinPkg/UefiShell/X64/Shell.efi
+# EFI Shell 1.0 for non UEFI 2.3+
+curl -o ${work_dir}/iso/EFI/shellx64_v1.efi https://raw.githubusercontent.com/tianocore/edk2/master/EdkShellBinPkg/FullShell/X64/Shell_Full.efi
+
+curl -o ${work_dir}/iso/loader/entries/uefi-shell-v1-x86_64.conf https://raw.githubusercontent.com/simono41/archiso/master/configs/releng/efiboot/loader/entries/uefi-shell-v1-x86_64.conf
+
+curl -o ${work_dir}/iso/loader/entries/uefi-shell-v2-x86_64.conf https://raw.githubusercontent.com/simono41/archiso/master/configs/releng/efiboot/loader/entries/uefi-shell-v2-x86_64.conf
+
+curl -o ${work_dir}/iso/loader/loader.conf https://raw.githubusercontent.com/simono41/archiso/master/configs/releng/efiboot/loader/loader.conf
 
 read -p "Soll das Image jetzt gemacht werden? [Y/n] " image
 
@@ -127,5 +140,5 @@ xorriso -as mkisofs \
 -eltorito\-catalog isolinux/boot.cat \
 -no-emul-boot -boot-load-size 4 -boot-info-table \
 -isohybrid-mbr $(pwd)/${work_dir}/iso/isolinux/isohdpfx.bin \
--output out/arch-${iso_label}-$(date "+%y.%m.%d")-x86_64.iso ${work_dir}/iso/
+-output ${out_dir}/arch-${iso_label}-$(date "+%y.%m.%d")-x86_64.iso ${work_dir}/iso/
 fi
