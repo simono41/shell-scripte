@@ -3,6 +3,7 @@ Description=SSH Tunnel
 ConditionPathExists=|/usr/bin
 After=network.target
 
+# host <-- client; Weiterleitung von Port ... auf dem Server an den Client (Port ...) auf Server:
 [Service]
 User=root
 ExecStart=/usr/bin/ssh -NTC -o ServerAliveInterval=60 -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=no -i /root/.ssh/id_rsa -R 12345:localhost:22 root@mgwywbvcwmot7vir.myfritz.net
