@@ -8,7 +8,7 @@ do
         FILENAME=${1##*/} # Dateiname ist alles ab dem letzten '/'
         echo "$FILENAME"
         # guck dir die Ausgabe erstmal an - wenn alles passt kannst Du das "echo" weglassen
-        ffmpeg -i "$FILENAME" -vn "${FILENAME%.*}.ogg" 
+        ffmpeg -i "$FILENAME" -vn -c:a flac -compression_level 2 "${FILENAME%.*}.flac" 
         shift
         cd -
 done
