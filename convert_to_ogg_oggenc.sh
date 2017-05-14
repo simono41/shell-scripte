@@ -8,10 +8,16 @@ do
         FILENAME=${1##*/} # Dateiname ist alles ab dem letzten '/'
         echo "$FILENAME"
         # guck dir die Ausgabe erstmal an - wenn alles passt kannst Du das "echo" weglassen
-        ffmpeg -i "$FILENAME" -vn -c:a libvorbis -b:a 192k "${FILENAME%.*}.ogg"
+        oggenc -q 6 "$FILENAME"
         shift
         cd -
 done
 
 #convert.sh <Ordner>/*.flv
 #192k = -q 6
+
+#Unterstützte Formate
+#WAVE
+#AIFF
+#Rohdaten
+#FLAC (Nur lesend; vorhandene Metadaten (Tags) werden standardmäßig in die Vorbis-Datei übernommen)
