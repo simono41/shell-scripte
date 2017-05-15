@@ -1,0 +1,18 @@
+pacman -Syu base base-devel syslinux efibootmgr efitools \
+grub intel-ucode os-prober btrfs-progs dosfstools arch-install-scripts xorriso \
+cdrtools squashfs-tools wget dosfstools btrfs-progs gdisk \
+\
+xorg-server xorg-xinit xorg-drivers acpid ntp dbus avahi cups cronie \
+xf86-input-synaptics ttf-dejavu xscreensaver openssh git netsurf mplayer dialog \
+xorg-twm xorg-xclock xterm alsa-utils pulseaudio pulseaudio-alsa \
+\
+firefox firefox-i18n-de firefox-noscript firefox-adblock-plus flashplugin chromium \
+libreoffice-fresh libreoffice-fresh-de vlc brasero \
+inkscape audacity atom mumble gimp hplip exfat-utils ntfs-3g transmission-gtk \
+kdenlive freeciv minetest teeworlds qemu blender simplescreenrecorder \
+obs-studio ardour hydrogen python python-pip jdk8-openjdk netbeans htop \
+0ad assaultcube megaglest \
+\
+murmur snapd apache docker \
+\
+nvidia nvidia-libgl nvidia-settings lib32-nvidia-libgl steam wine wine_gecko wine-mono
