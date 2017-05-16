@@ -14,8 +14,9 @@ if [ "$puplic" == "y" ];
     echo $key > ~/.ssh/id_rsa.pub;
 
     rm ~/.ssh/id_rsa;
-    echo "Enter your private id here and press the enter key for a new line and when you are done confirm with finish !!!";
-    while [ "$id" != "finish" ];
+    echo "Enter your private id here and press the enter key for a new line !!!";
+    id=null
+    while [ "$id" != "" ];
       do
       read -p "How is your id_rsa key?: " id;
       echo $id >> ~/.ssh/id_rsa;
