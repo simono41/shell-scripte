@@ -4,7 +4,7 @@ cdrtools squashfs-tools wget dosfstools btrfs-progs gdisk \
 \
 xorg-server xorg-xinit xorg-drivers acpid ntp dbus avahi cups cronie arandr \
 xf86-input-synaptics ttf-dejavu xscreensaver openssh git netsurf mplayer dialog \
-xorg xorg-twm xorg-xclock xterm alsa-utils pulseaudio pulseaudio-alsa \
+xorg xorg-twm xorg-xclock xterm alsa-utils pulseaudio pulseaudio-alsa pavucontrol \
 \
 firefox firefox-i18n-de firefox-noscript firefox-adblock-plus flashplugin chromium \
 libreoffice-fresh libreoffice-fresh-de vlc brasero \
