@@ -11,7 +11,7 @@ libreoffice-fresh libreoffice-fresh-de vlc brasero \
 inkscape audacity atom mumble gimp hplip exfat-utils ntfs-3g transmission-gtk \
 kdenlive freeciv minetest teeworlds qemu blender simplescreenrecorder \
 obs-studio ardour hydrogen python python-pip jdk8-openjdk netbeans htop \
-0ad assaultcube megaglest youtube-dl \
+0ad assaultcube megaglest hedgewars youtube-dl \
 \
 murmur snapd apache docker \
 \
