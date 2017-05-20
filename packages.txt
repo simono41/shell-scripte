@@ -1,18 +1,21 @@
-pacman -Syu base base-devel syslinux efibootmgr efitools \
+base base-devel syslinux efibootmgr efitools \
 grub intel-ucode os-prober btrfs-progs dosfstools arch-install-scripts xorriso \
 cdrtools squashfs-tools wget dosfstools btrfs-progs gdisk \
 \
-xorg-server xorg-xinit xorg-drivers acpid ntp dbus avahi cups cronie arandr \
-xf86-input-synaptics ttf-dejavu xscreensaver \
+xorg-server xorg-xinit xorg-drivers acpid ntp dbus avahi cups hplip cronie arandr \
+xf86-input-synaptics ttf-dejavu xscreensaver exfat-utils ntfs-3g \
 openssh git netsurf mplayer dialog xorriso cdrtools \
 xorg xorg-twm xorg-xclock xterm alsa-utils pulseaudio pulseaudio-alsa pavucontrol \
 \
-firefox firefox-i18n-de firefox-noscript firefox-adblock-plus flashplugin chromium \
-libreoffice-fresh libreoffice-fresh-de vlc brasero \
-inkscape audacity atom mumble gimp hplip exfat-utils ntfs-3g transmission-gtk \
-kdenlive freeciv minetest teeworlds qemu blender simplescreenrecorder \
-obs-studio ardour hydrogen python python-pip jdk8-openjdk netbeans htop \
-0ad assaultcube megaglest hedgewars youtube-dl libdvdread libdvdcss libdvdnav \
+firefox firefox-i18n-de firefox-noscript firefox-adblock-plus flashplugin \
+libreoffice-fresh libreoffice-fresh-de vlc brasero transmission-gtk \
+evince simple-scan file-roller galculator leafpad \
+\
+qemu blender simplescreenrecorder obs-studio ardour hydrogen python python-pip \
+jdk8-openjdk netbeans htop youtube-dl libdvdread libdvdcss libdvdnav kdenlive \
+inkscape audacity atom mumble gimp \
+\
+0ad assaultcube megaglest hedgewars freeciv minetest teeworlds
 \
 murmur snapd apache docker \
 \
