@@ -7,7 +7,7 @@ set -x
 
 apt update
 apt upgrade
-apt install hedgewars minetest minetest-server teeworlds teeworlds-server mumble mumble-server freeciv gnome-chess gnuchess inkscape gimp ffmpeg git htop android-tools-adb android-tools-fastboot qemu-system btrfs-tools nvidia-367 nvidia-settings -y
+apt install hedgewars minetest minetest-server teeworlds teeworlds-server mumble mumble-server freeciv gnome-chess gnuchess inkscape gimp ffmpeg flac vorbis-tools vorbisgain git htop android-tools-adb android-tools-fastboot qemu-system btrfs-tools nvidia-367 nvidia-settings -y
 nvidia-xconfig
 
 add-apt-repository ppa:wfg/0ad
