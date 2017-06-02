@@ -46,18 +46,23 @@ apt install -f
 
 apt autoremove
 
-echo "deb http://ftp.de.debian.org/debian/ jessie main contrib non-free" > /etc/apt/sources.list
+#echo "deb http://ftp.de.debian.org/debian/ jessie main contrib non-free" > /etc/apt/sources.list
 
 # jessie-backports
-echo "deb http://ftp.de.debian.org/debian jessie-backports main contrib non-free" >> /etc/apt/sources.list
+#echo "deb http://ftp.de.debian.org/debian jessie-backports main contrib non-free" >> /etc/apt/sources.list
 
-apt-get install linux-headers-$(uname -r|sed 's,[^-]*-[^-]*-,,')
+#apt update
+
+#apt-get install linux-headers-$(uname -r|sed 's,[^-]*-[^-]*-,,')
+
+#apt install nvidia-xconfig
+#apt install firmware-realtek
 
 # apt-get install -t jessie-backports linux-headers-$(uname -r|sed 's,[^-]*-[^-]*-,,')
 
-apt-get update
+#dpkg --add-architecture i386
 
-apt-get install -t jessie-backports nvidia-driver
+#apt-get install -t jessie-backports nvidia-driver libgl1-nvidia-glx:i386
 
 mkdir -p /media/hdd
 mkdir -p /home/simono41/Musik
