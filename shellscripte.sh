@@ -9,8 +9,19 @@ fi
 
 apt update
 apt upgrade -y
-apt install hedgewars minetest minetest-server teeworlds teeworlds-server mumble mumble-server freeciv gnome-chess gnuchess inkscape gimp ffmpeg flac vorbis-tools vorbisgain git htop android-tools-adb android-tools-fastboot qemu-system btrfs-tools nvidia-375 nvidia-settings -y
+apt install hedgewars minetest minetest-server teeworlds teeworlds-server \
+mumble mumble-server freeciv gnome-chess \
+gnuchess inkscape gimp ffmpeg flac git htop android-tools-adb \
+android-tools-fastboot \
+qemu-system btrfs-tools nvidia-367 nvidia-settings -y
 nvidia-xconfig
+
+add-apt-repository ppa:obsproject/obs-studio
+apt-get update && apt-get install obs-studio
+
+add-apt-repository ppa:kdenlive/kdenlive-stable
+apt-get update
+apt-get install kdenlive
 
 add-apt-repository ppa:wfg/0ad
 apt-get update
