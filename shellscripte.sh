@@ -1,12 +1,14 @@
+#!/bin/bash
+
+set -xe
+
 if [[ $EUID -ne 0 ]]; then
    echo "This script must be run as root" 1>&2
    exit 1
 fi
 
-set -x
-
 apt update
-apt upgrade
+apt upgrade -y
 apt install hedgewars minetest minetest-server teeworlds teeworlds-server mumble mumble-server freeciv gnome-chess gnuchess inkscape gimp ffmpeg flac vorbis-tools vorbisgain git htop android-tools-adb android-tools-fastboot qemu-system btrfs-tools nvidia-375 nvidia-settings -y
 nvidia-xconfig
 
@@ -28,11 +30,29 @@ apt-get install spotify-client -y
 
 # dd bs=4M if=2017-03-02-raspbian-jessie.img of=/dev/sdd status=progress && sync
 
+dpkg -i packages/*.deb
+apt install -f
+
+apt autoremove
+
+echo "deb http://ftp.de.debian.org/debian/ jessie main contrib non-free" > /etc/apt/sources.list
+
+# jessie-backports
+echo "deb http://ftp.de.debian.org/debian jessie-backports main contrib non-free" >> /etc/apt/sources.list
+
+apt-get install linux-headers-$(uname -r|sed 's,[^-]*-[^-]*-,,')
+
+# apt-get install -t jessie-backports linux-headers-$(uname -r|sed 's,[^-]*-[^-]*-,,')
+
+apt-get update
+
+apt-get install -t jessie-backports nvidia-driver
+
 mkdir -p /media/hdd
 mkdir -p /home/simono41/Musik
 mkdir -p /home/simono41/Bilder
 mkdir -p /home/simono41/Dokumente
-mkdir -p /home/simono41/Videos 
+mkdir -p /home/simono41/Videos
 mkdir -p /home/simono41/Downloads
 echo "/dev/sda1   /media/hdd   ext4   defaults   0   2" >> /etc/fstab
 echo "/media/hdd/mnt/Musik  /home/simono41/Musik  none  bind  0  0" >> /etc/fstab
