@@ -1,21 +1,22 @@
 read -p "Wie ist die URL? : " url
-read -p "Soll ein Video heruntergeladen werden oder Audio? [audio/video/opus] : " format
 read -p "Wo sollen die Dateien heruntergeladen werden? : " pfad
+read -p "Soll ein Video heruntergeladen werden oder Audio? [opus/audio/video/BEST] : " format
 
 if [ "$format" == "opus" ]
 then
-    format=251
+    format="-f 251"
 elif [ "$format" == "audio" ]
 then
-    format=140
-else
-#video
-    format=43
+    format="-f 140"
+elif [ "$format" == "video" ]
+then
+    format="-f 43"
 fi
 
 mkdir -p $pfad
+
 cd $pfad
-/data/data/com.termux/files/usr/bin/python /storage/emulated/0/youtube-dl -i -f $format $url
+/data/data/com.termux/files/usr/bin/python /storage/emulated/0/youtube-dl --ffmpeg-location /data/data/com.termux/files/usr/bin/ffmpeg -i $format $url
 
 # ROOT_SHELL="$PREFIX/bin/bash"
 
