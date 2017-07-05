@@ -20,4 +20,4 @@ fi
 mkdir -p $pfad
 
 cd $pfad
-python youtube-dl -i $format $url
+youtube-dl -i $format $url
