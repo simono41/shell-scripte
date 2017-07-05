@@ -16,7 +16,7 @@ fi
 mkdir -p $pfad
 
 cd $pfad
-/data/data/com.termux/files/usr/bin/python /storage/emulated/0/youtube-dl --ffmpeg-location /data/data/com.termux/files/usr/bin/ffmpeg -i $format $url
+/data/data/com.termux/files/usr/bin/python /data/data/com.termux/files/usr/bin/youtube-dl --ffmpeg-location /data/data/com.termux/files/usr/bin/ffmpeg -i $format $url
 
 # ROOT_SHELL="$PREFIX/bin/bash"
 
