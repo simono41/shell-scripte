@@ -1,6 +1,10 @@
+#!/system/xbin/bash
+
+set -ex
+
 read -p "Wie ist die URL? : " url
 read -p "Wo sollen die Dateien heruntergeladen werden? : " pfad
-read -p "Soll ein Video heruntergeladen werden oder Audio? [opus/audio/video/BEST] : " format
+read -p "Soll ein Video heruntergeladen werden oder Audio? [opus/audio/video/BEST/60k] : " format
 
 if [ "$format" == "opus" ]
 then
@@ -11,12 +15,16 @@ then
 elif [ "$format" == "video" ]
 then
     format="-f 43"
+elif [ "$format" == "60k" ]
+then
+    format="-f 303+251"
 fi
 
 mkdir -p $pfad
 
 cd $pfad
-/data/data/com.termux/files/usr/bin/python /data/data/com.termux/files/usr/bin/youtube-dl --ffmpeg-location /data/data/com.termux/files/usr/bin/ffmpeg -i $format $url
+pwd
+/data/data/com.termux/files/usr/bin/python /data/data/com.termux/files/usr/bin/youtube-dl --ffmpeg-location /data/data/com.termux/files/usr/bin/ffmpeg -i --socket-timeout 10000 $format $url
 
 # ROOT_SHELL="$PREFIX/bin/bash"
 
