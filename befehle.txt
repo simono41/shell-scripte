@@ -1,3 +1,4 @@
 busybox mount -o remount rw /system/
 BEFEHL=ffmpeg
 ln -s /data/data/com.termux/files/usr/bin/$BEFEHL /system/xbin/
+mount -o rw,remount,rw /system
