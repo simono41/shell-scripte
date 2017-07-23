@@ -1,0 +1,10 @@
+#!/bin/bash
+
+set -ex
+
+[ -n $"{1}" ] && git config --global user.email "${1}"
+git add --all
+git commit --all
+git push
+git show
+git status
