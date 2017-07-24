@@ -7,7 +7,7 @@ echo "bash ./sgit user.email commit"
 fi
 
 if [[ -z "${2}" ]]; then
-echo "Bitte commit angeben!!!"
+echo "Bitte email und commit angeben!!!"
 exit 1
 fi
 
