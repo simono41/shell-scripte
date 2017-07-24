@@ -2,9 +2,20 @@
 
 set -ex
 
-read -p "Wie ist die URL? : " url
-read -p "Wo sollen die Dateien heruntergeladen werden? : " pfad
-read -p "Soll ein Video heruntergeladen werden oder Audio? [opus/audio/video/BEST/4k] : " format
+if [ "$1" == "--help" ] || [[ -z "$1" ]]
+then
+echo "bash ./youtube-dl.sh URL PFAD FORMAT"
+echo "Formate: opus/audio/video/BEST/4k"
+exit 0
+fi
+
+url="$1"
+pfad="$2"
+format="$3"
+
+#read -p "Wie ist die URL? : " url
+#read -p "Wo sollen die Dateien heruntergeladen werden? : " pfad
+#read -p "Soll ein Video heruntergeladen werden oder Audio? [opus/audio/video/BEST/4k] : " format
 
 if [ "$format" == "opus" ]
 then
@@ -23,4 +34,4 @@ fi
 mkdir -p $pfad
 
 cd $pfad
-youtube-dl -i $format $url
+youtube-dl -i --socket-timeout 10000 $format $url
