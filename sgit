@@ -14,6 +14,6 @@ fi
 git config --global user.email "${1}"
 git add --all
 git commit --all -m "${2}"
-git push
 git show
+git push
 git status
