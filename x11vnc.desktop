@@ -1,0 +1,5 @@
+[Desktop Entry]
+Type=Application
+Name=X11VNC
+Exec=x11vnc -usepw -forever -display :0
+StartupNotify=false
