@@ -141,7 +141,7 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 					firewall-cmd --direct --remove-rule ipv4 nat POSTROUTING 0 -s 10.8.0.0/24 ! -d 10.8.0.0/24 -j SNAT --to $IP
 					firewall-cmd --permanent --direct --remove-rule ipv4 nat POSTROUTING 0 -s 10.8.0.0/24 ! -d 10.8.0.0/24 -j SNAT --to $IP
 				else
-					IP=$(grep 'iptables -t nat -A POSTROUTING -s 10.8.0.0/24 ! -d 10.8.0.0/24 -j SNAT --to ' $RCLOCAL | cut -d " " -f 11)
+					IP=$(grep 'iptables -t nat -A POSTROUTING -s 10.8.0.0/24 ! -d 10.8.0.0/24 -j SNAT --to ' $RCLOCAL | cut -d " " -f 14)
 					iptables -t nat -D POSTROUTING -s 10.8.0.0/24 ! -d 10.8.0.0/24 -j SNAT --to $IP
 					sed -i '/iptables -t nat -A POSTROUTING -s 10.8.0.0\/24 ! -d 10.8.0.0\/24 -j SNAT --to /d' $RCLOCAL
 					if iptables -L -n | grep -qE '^ACCEPT'; then
@@ -161,12 +161,11 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 					fi
 				fi
 				if [[ "$OS" = 'debian' ]]; then
-					apt-get remove --purge -y openvpn openvpn-blacklist
+					apt-get remove --purge -y openvpn
 				else
 					yum remove openvpn -y
 				fi
 				rm -rf /etc/openvpn
-				rm -rf /usr/share/doc/openvpn*
 				echo ""
 				echo "OpenVPN removed!"
 			else
@@ -249,7 +248,7 @@ else
 	./easyrsa build-client-full $CLIENT nopass
 	./easyrsa gen-crl
 	# Move the stuff we need
-	cp pki/ca.crt pki/private/ca.key pki/dh.pem pki/issued/server.crt pki/private/server.key /etc/openvpn/easy-rsa/pki/crl.pem /etc/openvpn
+	cp pki/ca.crt pki/private/ca.key pki/dh.pem pki/issued/server.crt pki/private/server.key pki/crl.pem /etc/openvpn
 	# CRL is read with each client connection, when OpenVPN is dropped to nobody
 	chown nobody:$GROUPNAME /etc/openvpn/crl.pem
 	# Generate key for tls-auth
@@ -269,7 +268,9 @@ tls-auth ta.key 0
 topology subnet
 server 10.8.0.0 255.255.255.0
 ifconfig-pool-persist ipp.txt" > /etc/openvpn/server.conf
+        echo 'push "route 10.8.0.0 255.255.255.0"' >> /etc/openvpn/server.conf
 	echo 'push "redirect-gateway def1 bypass-dhcp"' >> /etc/openvpn/server.conf
+        echo 'push "route 0.0.0.0 0.0.0.0"' >> /etc/openvpn/server.conf
 	# DNS
 	case $DNS in
 		1) 
@@ -298,7 +299,8 @@ ifconfig-pool-persist ipp.txt" > /etc/openvpn/server.conf
 		echo 'push "dhcp-option DNS 64.6.65.6"' >> /etc/openvpn/server.conf
 		;;
 	esac
-	echo "keepalive 10 120
+	echo "client-to-client
+keepalive 10 120
 cipher AES-256-CBC
 comp-lzo
 user nobody
@@ -306,15 +308,20 @@ group $GROUPNAME
 persist-key
 persist-tun
 status openvpn-status.log
+log-append openvpn.log
 verb 3
 crl-verify crl.pem" >> /etc/openvpn/server.conf
 	# Enable net.ipv4.ip_forward for the system
+        sysctl -w net/ipv4/ip_forward=1
 	sed -i '/\<net.ipv4.ip_forward\>/c\net.ipv4.ip_forward=1' /etc/sysctl.conf
 	if ! grep -q "\<net.ipv4.ip_forward\>" /etc/sysctl.conf; then
 		echo 'net.ipv4.ip_forward=1' >> /etc/sysctl.conf
 	fi
 	# Avoid an unneeded reboot
+        # initialize natting for openvpn
+        iptables -t nat -F POSTROUTING
 	echo 1 > /proc/sys/net/ipv4/ip_forward
+        iptables -t nat -A POSTROUTING -o eth0 -s 10.8.0.0/24 -j MASQUERADE
 	if pgrep firewalld; then
 		# Using both permanent and not permanent rules to avoid a firewalld
 		# reload.
