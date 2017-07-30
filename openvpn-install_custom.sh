@@ -7,6 +7,7 @@
 # your Debian/Ubuntu/CentOS box. It has been designed to be as unobtrusive and
 # universal as possible.
 
+# From wget https://git.io/vpn -O openvpn-install.sh
 
 # Detect Debian users running the script with "sh" instead of bash
 if readlink /proc/$$/exe | grep -qs "dash"; then
@@ -268,7 +269,9 @@ tls-auth ta.key 0
 topology subnet
 server 10.8.0.0 255.255.255.0
 ifconfig-pool-persist ipp.txt" > /etc/openvpn/server.conf
+        echo 'push "route 10.8.0.0 255.255.255.0"' >> /etc/openvpn/server.conf
 	echo 'push "redirect-gateway def1 bypass-dhcp"' >> /etc/openvpn/server.conf
+        echo 'push "route 0.0.0.0 0.0.0.0"' >> /etc/openvpn/server.conf
 	# DNS
 	case $DNS in
 		1) 
@@ -297,7 +300,8 @@ ifconfig-pool-persist ipp.txt" > /etc/openvpn/server.conf
 		echo 'push "dhcp-option DNS 64.6.65.6"' >> /etc/openvpn/server.conf
 		;;
 	esac
-	echo "keepalive 10 120
+	echo "client-to-client
+keepalive 10 120
 cipher AES-256-CBC
 comp-lzo
 user nobody
@@ -305,15 +309,20 @@ group $GROUPNAME
 persist-key
 persist-tun
 status openvpn-status.log
+log-append openvpn.log
 verb 3
 crl-verify crl.pem" >> /etc/openvpn/server.conf
 	# Enable net.ipv4.ip_forward for the system
+        sysctl -w net/ipv4/ip_forward=1
 	sed -i '/\<net.ipv4.ip_forward\>/c\net.ipv4.ip_forward=1' /etc/sysctl.conf
 	if ! grep -q "\<net.ipv4.ip_forward\>" /etc/sysctl.conf; then
 		echo 'net.ipv4.ip_forward=1' >> /etc/sysctl.conf
 	fi
 	# Avoid an unneeded reboot
+        # initialize natting for openvpn
+        iptables -t nat -F POSTROUTING
 	echo 1 > /proc/sys/net/ipv4/ip_forward
+        iptables -t nat -A POSTROUTING -o eth0 -s 10.8.0.0/24 -j MASQUERADE
 	if pgrep firewalld; then
 		# Using both permanent and not permanent rules to avoid a firewalld
 		# reload.
