@@ -19,3 +19,4 @@ done
 cd -
 pwd
 ffmpeg -i onefile.mp3 -acodec copy onefile-final.mp3
+rm onefile.mp3

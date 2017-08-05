@@ -22,3 +22,4 @@ done
 cd -
 pwd
 ffmpeg -i onefile.ogg -acodec copy onefile-final.ogg
+rm onefile.ogg
