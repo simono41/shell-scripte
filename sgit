@@ -12,7 +12,9 @@ exit 1
 fi
 
 git config --global user.email "${1}"
+git config --global user.name "${1}"
 git status
+git pull
 git add --all
 git commit --all -m "${2}"
 git show
