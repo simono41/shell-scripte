@@ -16,6 +16,8 @@ do
         i=$(expr ${i} + 1)
 done
 
+sync
+
 echo "Fertig!!!"
 
 #./cp_onefile.sh onefile-final.mp3 /mnt1/
