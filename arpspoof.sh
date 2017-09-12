@@ -11,6 +11,7 @@ echo 1 > /proc/sys/net/ipv4/ip_forward
 
 gateway=$(route -n|grep ^0.0.0.0|cut -d' ' -f 10)
 
+arp
 ip link
 read -p "Wie heisst die Schnittstelle? [enp30s0\eth0] : " modul
 nmap -sn ${gateway}/24
