@@ -15,17 +15,20 @@ format="$3"
 
 #read -p "Wie ist die URL? : " url
 #read -p "Wo sollen die Dateien heruntergeladen werden? : " pfad
-#read -p "Soll ein Video heruntergeladen werden oder Audio? [opus/audio/video/BEST/fullhd/4k] : " format
+#read -p "Soll ein Video heruntergeladen werden oder Audio? [opus/m4a/video/hd/fullhd/4k] : " format
 
 if [ "$format" == "opus" ]
 then
     format="-f 251"
-elif [ "$format" == "audio" ]
+elif [ "$format" == "m4a" ]
 then
     format="-f 140"
 elif [ "$format" == "video" ]
 then
     format="-f 43"
+elif [ "$format" == "hd" ]
+then
+    format="-f 247+251"
 elif [ "$format" == "fullhd" ]
 then
     format="-f 303+251"
