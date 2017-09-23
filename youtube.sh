@@ -2,21 +2,26 @@
 
 set -ex
 
-read -p "Haben sie eine url? : [URL/suche] " suche
-if [ "$suche" == "suche" ]
+if [ "$1" == "--help" ] || [[ -z "$1" ]]
 then
-read -p "Wie heißt das Stichwort? : " wort
-else
-read -p "Wie ist die URL? : " url
+echo "bitte alles kleinschreiben"
+echo "bash ./youtube-dl.sh SUCHE/NOSUCHE URL/SUCHE FORMAT VOLLBILD/NOVOLLBILD"
+echo "Formate: [opus/m4a/video/hd/fullhd/4k]"
+exit 0
 fi
 
-read -p "Vollbild? : [Y/n] " vollbild
-if [ "$vollbild" != "n" ]
+suche="$1"
+url="$2"
+format="$3"
+
+if [ "$4" == "vollbild" ]
 then
 voll="-fs"
 fi
 
-read -p "Soll ein Video heruntergeladen werden oder Audio? [opus/m4a/video/hd/fullhd/4k] : " format
+#read -p "Wie ist die URL? : " url
+#read -p "Wo sollen die Dateien heruntergeladen werden? : " pfad
+#read -p "Soll ein Video heruntergeladen werden oder Audio? [opus/m4a/video/hd/fullhd/4k] : " format
 
 if [ "$format" == "opus" ]
 then
@@ -40,7 +45,7 @@ fi
 
 if [ "$suche" == "suche" ]
 then
-youtube-dl "ytsearch:$wort" -q --force-ipv4 $format -o- | mplayer $voll -cache 8192 -
+youtube-dl "ytsearch:$wort" -q --force-ipv4 $format -o- | mplayer $voll -cache 8192 -ao pulse -
 else
-youtube-dl -q --force-ipv4 $format -o- $url | mplayer $voll -cache 8192 -
+youtube-dl -q --force-ipv4 $format -o- $url | mplayer $voll -cache 8192 -ao pulse -
 fi
