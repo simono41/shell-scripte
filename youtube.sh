@@ -45,7 +45,7 @@ fi
 
 if [ "$suche" == "suche" ]
 then
-youtube-dl "ytsearch:$wort" -q --force-ipv4 $format -o- | mplayer $voll -cache 8192 -ao pulse -
+youtube-dl "ytsearch:$wort" -q --force-ipv4 $format -o- | mplayer $voll -cache 8192 -
 else
-youtube-dl -q --force-ipv4 $format -o- $url | mplayer $voll -cache 8192 -ao pulse -
+youtube-dl -q --force-ipv4 $format -o- $url | mplayer $voll -cache 8192 -
 fi
