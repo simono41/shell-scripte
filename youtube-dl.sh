@@ -41,4 +41,4 @@ fi
 mkdir -p $pfad
 
 cd $pfad
-youtube-dl -i --socket-timeout 10000 $format $url
+youtube-dl -i --socket-timeout 10000 --force-ipv4 $format $url
