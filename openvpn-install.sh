@@ -827,6 +827,8 @@ tls-client
 tls-version-min 1.2
 tls-cipher $CC_ENC
 setenv opt block-outside-dns
+compress $COMPRESSION
+auth-nocache
 verb 3" >> /etc/openvpn/client-template.txt
 
 	# Generate the custom client.ovpn
