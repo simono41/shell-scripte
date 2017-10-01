@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -ex
+
 # Secure OpenVPN server installer for Debian, Ubuntu, CentOS and Arch Linux
 # https://github.com/Angristan/OpenVPN-install
 
@@ -95,7 +97,7 @@ if [[ "$IP" = "" ]]; then
 	IP=$(wget -qO- ipv4.icanhazip.com)
 fi
 # Get Internet network interface with default route
-NIC=$(ip -4 route ls | grep default | grep -Po '(?<=dev )(\S+)')
+NIC=$(ip -4 route ls | grep default -m 1 | grep -Po '(?<=dev )(\S+)')
 
 if [[ -e /etc/openvpn/server.conf ]]; then
 	while :
@@ -195,7 +197,7 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 				else  # if not SUDO_USER, use /root
 					homeDir="/root"
 				fi
-				rm $homeDir*/.ovpn
+				rm $homeDir/*.ovpn
 				echo ""
 				echo "OpenVPN removed!"
 			else
@@ -836,3 +838,9 @@ verb 3" >> /etc/openvpn/client-template.txt
 	echo "If you want to add more clients, you simply need to run this script another time!"
 fi
 exit 0;
+
+# internet-routing
+iptables -t nat -F POSTROUTING
+echo 1 > /proc/sys/net/ipv4/ip_forward
+iptables -t nat -A POSTROUTING -o eth0 -s 10.8.0.0/24 -j MASQUERADE
+
