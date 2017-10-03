@@ -21,5 +21,5 @@ elif [ "restore" == "$1" ]; then
 
   tar -xf ${archiv/.pxz*}
 else
-  echo "./compress.sh make/restore input/output"
+  echo "./compress.sh make/restore archivname input/output"
 fi
