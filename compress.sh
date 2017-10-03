@@ -32,4 +32,6 @@ else
   echo "./compress.sh make/restore archivname input/output"
   echo "./compress.sh make archivname daten"
   echo "./compress.sh restore archivname"
+  echo "or use"
+  echo "tar -Ipixz -cf output.tpxz dir  # Make tar use pixz automatically"
 fi
