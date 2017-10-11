@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -ex
-
 # Secure OpenVPN server installer for Debian, Ubuntu, CentOS and Arch Linux
 # https://github.com/Angristan/OpenVPN-install
 
@@ -27,7 +25,7 @@ if [[ -e /etc/debian_version ]]; then
 	VERSION_ID=$(cat /etc/os-release | grep "VERSION_ID")
 	RCLOCAL='/etc/rc.local'
 	SYSCTL='/etc/sysctl.conf'
-	if [[ "$VERSION_ID" != 'VERSION_ID="8"' ]] && [[ "$VERSION_ID" != 'VERSION_ID="9"' ]] && [[ "$VERSION_ID" != 'VERSION_ID="14.04"' ]] && [[ "$VERSION_ID" != 'VERSION_ID="16.04"' ]] && [[ "$VERSION_ID" != 'VERSION_ID="17.04"' ]]; then
+	if [[ "$VERSION_ID" != 'VERSION_ID="7"' ]] && [[ "$VERSION_ID" != 'VERSION_ID="8"' ]] && [[ "$VERSION_ID" != 'VERSION_ID="9"' ]] && [[ "$VERSION_ID" != 'VERSION_ID="12.04"' ]] && [[ "$VERSION_ID" != 'VERSION_ID="14.04"' ]] && [[ "$VERSION_ID" != 'VERSION_ID="16.04"' ]] && [[ "$VERSION_ID" != 'VERSION_ID="16.10"' ]] && [[ "$VERSION_ID" != 'VERSION_ID="17.04"' ]]; then
 		echo "Your version of Debian/Ubuntu is not supported."
 		echo "I can't install a recent version of OpenVPN on your system."
 		echo ""
@@ -59,7 +57,9 @@ fi
 
 newclient () {
 	# Where to write the custom client.ovpn?
-	if [ ${SUDO_USER} ]; then   # if not, use SUDO_USER
+	if [ -e /home/$1 ]; then  # if $1 is a user name
+		homeDir="/home/$1"
+	elif [ ${SUDO_USER} ]; then   # if not, use SUDO_USER
 		homeDir="/home/${SUDO_USER}"
 	else  # if not SUDO_USER, use /root
 		homeDir="/root"
@@ -75,18 +75,10 @@ newclient () {
 	echo "<key>" >> $homeDir/$1.ovpn
 	cat /etc/openvpn/easy-rsa/pki/private/$1.key >> $homeDir/$1.ovpn
 	echo "</key>" >> $homeDir/$1.ovpn
-	#We verify if we used tls-crypt or tls-auth during the installation
-	TLS_SIG=$(cat /etc/openvpn/TLS_SIG)
-	if [[ $TLS_SIG == "1" ]]; then
-		echo "<tls-crypt>" >> ~/$1.ovpn
-		cat /etc/openvpn/tls-crypt.key >> ~/$1.ovpn
-		echo "</tls-crypt>" >> ~/$1.ovpn
-	elif [[ $TLS_SIG == "2" ]]; then
-		echo "key-direction 1" >> $homeDir/$1.ovpn
-		echo "<tls-auth>" >> $homeDir/$1.ovpn
-		cat /etc/openvpn/tls-auth.key >> $homeDir/$1.ovpn
-		echo "</tls-auth>" >> $homeDir/$1.ovpn
-	fi
+	echo "key-direction 1" >> $homeDir/$1.ovpn
+	echo "<tls-auth>" >> $homeDir/$1.ovpn
+	cat /etc/openvpn/tls-auth.key >> $homeDir/$1.ovpn
+	echo "</tls-auth>" >> $homeDir/$1.ovpn
 }
 
 # Try to get our IP from the system and fallback to the Internet.
@@ -97,7 +89,7 @@ if [[ "$IP" = "" ]]; then
 	IP=$(wget -qO- ipv4.icanhazip.com)
 fi
 # Get Internet network interface with default route
-NIC=$(ip -4 route ls | grep default -m 1 | grep -Po '(?<=dev )(\S+)')
+NIC=$(ip -4 route ls | grep default | grep -Po '(?<=dev )(\S+)')
 
 if [[ -e /etc/openvpn/server.conf ]]; then
 	while :
@@ -145,7 +137,7 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 			CLIENT=$(tail -n +2 /etc/openvpn/easy-rsa/pki/index.txt | grep "^V" | cut -d '=' -f 2 | sed -n "$CLIENTNUMBER"p)
 			cd /etc/openvpn/easy-rsa/
 			./easyrsa --batch revoke $CLIENT
-			./easyrsa gen-crl
+			EASYRSA_CRL_DAYS=3650 ./easyrsa gen-crl
 			rm -rf pki/reqs/$CLIENT.req
 			rm -rf pki/private/$CLIENT.key
 			rm -rf pki/issued/$CLIENT.crt
@@ -191,13 +183,6 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 				fi
 				rm -rf /etc/openvpn
 				rm -rf /usr/share/doc/openvpn*
-				# Where are the client files?
-				if [ ${SUDO_USER} ]; then   # if not, use SUDO_USER
-					homeDir="/home/${SUDO_USER}"
-				else  # if not SUDO_USER, use /root
-					homeDir="/root"
-				fi
-				rm $homeDir/*.ovpn
 				echo ""
 				echo "OpenVPN removed!"
 			else
@@ -227,10 +212,8 @@ else
 	echo ""
 	echo "What protocol do you want for OpenVPN?"
 	echo "Unless UDP is blocked, you should not use TCP (unnecessarily slower)"
-	echo "   1) UDP (recommended)"
-	echo "   2) TCP"
-	while [[ $PROTOCOL != "1" && $PROTOCOL != "2" ]]; do
-		read -p "Protocol [1-2]: " -e -i 1 PROTOCOL
+	while [[ $PROTOCOL != "UDP" && $PROTOCOL != "TCP" ]]; do
+		read -p "Protocol [UDP/TCP]: " -e -i UDP PROTOCOL
 	done
 	echo ""
 	echo "What DNS do you want to use with the VPN?"
@@ -240,250 +223,88 @@ else
 	echo "   4) OpenDNS (Anycast: worldwide)"
 	echo "   5) Google (Anycast: worldwide)"
 	echo "   6) Yandex Basic (Russia)"
-	while [[ $DNS != "1" && $DNS != "2" && $DNS != "3" && $DNS != "4" && $DNS != "5" && $DNS != "6" ]]; do
-		read -p "DNS [1-6]: " -e -i 1 DNS
+	echo "   7) AdGuard DNS (Russia)"
+	while [[ $DNS != "1" && $DNS != "2" && $DNS != "3" && $DNS != "4" && $DNS != "5" && $DNS != "6" && $DNS != "7" ]]; do
+		read -p "DNS [1-7]: " -e -i 1 DNS
 	done
-	echo ""
-	echo "Choose which compression algorithm you want to use:"
-	echo "   1) LZ4 (faster)"
-	echo "   2) LZ0 (use for OpenVPN 2.3 compatibility"
-	while [[ $COMPRESSION != "1" && $COMPRESSION != "2" ]]; do
-		read -p "Compression algorithm [1-2]: " -e -i 1 COMPRESSION
-	done
-	case $COMPRESSION in
-		1)
-		COMPRESSION="lz4"
-		;;
-		2)
-		COMPRESSION="lzo"
-		;;
-	esac
 	echo ""
 	echo "See https://github.com/Angristan/OpenVPN-install#encryption to learn more about "
-	echo "the encryption in OpenVPN and the choices proposed in this script."
-	echo "Please note that all the choices proposed are secure enough considering today's strandards, unlike some default OpenVPN options"
-	echo "You can just type "enter" if you don't know what to choose."
-	echo "Note that if you want to use an OpenVPN 2.3 client, You'll have to choose OpenVPN 2.3-compatible options."
-	echo "All OpenVPN 2.3-compatible choices are specified for each following option."
-	echo ""
+	echo "the encryption in OpenVPN and the choices I made in this script."
+	echo "Please note that all the choices proposed are secure (to a different degree)"
+	echo "and are still viable to date, unlike some default OpenVPN options"
+	echo ''
 	echo "Choose which cipher you want to use for the data channel:"
-	echo "   1) AES-128-GCM (recommended)"
-	echo "   2) AES-192-GCM"
-	echo "   3) AES-256-GCM"
-	echo "Only use AES-CBC for OpenVPN 2.3 compatibilty"
-	echo "   4) AES-128-CBC"
-	echo "   5) AES-192-CBC"
-	echo "   6) AES-256-CBC"
-	while [[ $CIPHER != "1" && $CIPHER != "2" && $CIPHER != "3" && $CIPHER != "4" && $CIPHER != "5" && $CIPHER != "6" ]]; do
-		read -p "Data channel cipher [1-6]: " -e -i 1 CIPHER
+	echo "   1) AES-128-CBC (fastest and sufficiently secure for everyone, recommended)"
+	echo "   2) AES-192-CBC"
+	echo "   3) AES-256-CBC"
+	echo "Alternatives to AES, use them only if you know what you're doing."
+	echo "They are relatively slower but as secure as AES."
+	echo "   4) CAMELLIA-128-CBC"
+	echo "   5) CAMELLIA-192-CBC"
+	echo "   6) CAMELLIA-256-CBC"
+	echo "   7) SEED-CBC"
+	while [[ $CIPHER != "1" && $CIPHER != "2" && $CIPHER != "3" && $CIPHER != "4" && $CIPHER != "5" && $CIPHER != "6" && $CIPHER != "7" ]]; do
+		read -p "Cipher [1-7]: " -e -i 1 CIPHER
 	done
 	case $CIPHER in
 		1)
-		CIPHER="cipher AES-128-GCM"
-		;;
-		2)
-		CIPHER="cipher AES-192-GCM"
-		;;
-		3)
-		CIPHER="cipher AES-256-GCM"
-		;;
-		4)
 		CIPHER="cipher AES-128-CBC"
 		;;
-		5)
+		2)
 		CIPHER="cipher AES-192-CBC"
 		;;
-		6)
+		3)
 		CIPHER="cipher AES-256-CBC"
 		;;
-	esac
-	echo ""
-	echo "Choose what kind of certificate you want to use:"
-	echo "Elleptic Curves keys (EC) are recommended, they're faster, lighter and more secure."
-	echo "Use RSA for OpenVPN 2.3 compatibilty"
-	echo "   1) ECDSA (recommended)"
-	echo "   2) RSA"
-	while [[ $CERT_TYPE != "1" && $CERT_TYPE != "2" ]]; do
-		read -p "Certificate type [1-2]: " -e -i 1 CERT_TYPE
-	done
-	case $CERT_TYPE in
-		1)
-			echo ""
-			echo "Choose which curve you want to use for the EC key:"
-			echo "   1) secp256r1"
-			echo "   2) secp384r1 (recommended)"
-			echo "   3) secp521r1"
-			while [[ $CERT_CURVE != "1" && $CERT_CURVE != "2" && $CERT_CURVE != "3" ]]; do
-				read -p "Curve [1-3]: " -e -i 2 CERT_CURVE
-			done
-			case $CERT_CURVE in
-				1)
-					CERT_CURVE="secp256r1"
-				;;
-				2)
-					CERT_CURVE="secp384r1"
-				;;
-				3)
-					CERT_CURVE="secp521r1"
-				;;
-			esac
+		4)
+		CIPHER="cipher CAMELLIA-128-CBC"
 		;;
-		2)
-			echo ""
-			echo "Choose which RSA key size you want to use:"
-			echo "   1) 2048 bits"
-			echo "   2) 3072 bits (recommended)"
-			echo "   3) 4096 bits"
-			while [[ $RSA_SIZE != "1" && $RSA_SIZE != "2" && $RSA_SIZE != "3" ]]; do
-				read -p "DH key size [1-3]: " -e -i 2 RSA_SIZE
-			done
-			case $RSA_SIZE in
-				1)
-					RSA_SIZE="2048"
-				;;
-				2)
-					RSA_SIZE="3072"
-				;;
-				3)
-					RSA_SIZE="4096"
-				;;
-			esac
+		5)
+		CIPHER="cipher CAMELLIA-192-CBC"
+		;;
+		6)
+		CIPHER="cipher CAMELLIA-256-CBC"
+		;;
+		7)
+		CIPHER="cipher SEED-CBC"
 		;;
 	esac
 	echo ""
-	echo "Choose which hash algorithm you want to use for the certificate:"
-	echo "   1) SHA-256"
-	echo "   2) SHA-384 (recommended)"
-	echo "   3) SHA-512"
-	while [[ $CERT_HASH != "1" && $CERT_HASH != "2" && $CERT_HASH != "3" ]]; do
-		read -p "Hash algorithm [1-3]: " -e -i 2 CERT_HASH
+	echo "Choose what size of Diffie-Hellman key you want to use:"
+	echo "   1) 2048 bits (fastest)"
+	echo "   2) 3072 bits (recommended, best compromise)"
+	echo "   3) 4096 bits (most secure)"
+	while [[ $DH_KEY_SIZE != "1" && $DH_KEY_SIZE != "2" && $DH_KEY_SIZE != "3" ]]; do
+		read -p "DH key size [1-3]: " -e -i 2 DH_KEY_SIZE
 	done
-	case $CERT_HASH in
+	case $DH_KEY_SIZE in
 		1)
-			CERT_HASH="sha256"
+		DH_KEY_SIZE="2048"
 		;;
 		2)
-			CERT_HASH="sha384"
+		DH_KEY_SIZE="3072"
 		;;
 		3)
-			CERT_HASH="sha512"
+		DH_KEY_SIZE="4096"
 		;;
 	esac
 	echo ""
-	echo "Choose what kind of Diffie-Hellman key you want to use."
-	echo "Elleptic Curves (EC) are recommended, they're faster, lighter and more secure."
-	echo "Use DH for OpenVPN 2.3 compatibilty"
-	echo "   1) ECDH (recommended)"
-	echo "   2) DH"
-	while [[ $DH_TYPE != "1" && $DH_TYPE != "2" ]]; do
-		read -p "DH key type [1-2]: " -e -i 1 DH_TYPE
+	echo "Choose what size of RSA key you want to use:"
+	echo "   1) 2048 bits (fastest)"
+	echo "   2) 3072 bits (recommended, best compromise)"
+	echo "   3) 4096 bits (most secure)"
+	while [[ $RSA_KEY_SIZE != "1" && $RSA_KEY_SIZE != "2" && $RSA_KEY_SIZE != "3" ]]; do
+		read -p "DH key size [1-3]: " -e -i 2 RSA_KEY_SIZE
 	done
-	case $DH_TYPE in
+	case $RSA_KEY_SIZE in
 		1)
-			echo ""
-			echo "Choose which curve you want to use for the ECDH key"
-			echo "   1) secp256r1"
-			echo "   2) secp384r1 (recommended)"
-			echo "   3) secp521r1"
-			while [[ $DH_CURVE != "1" && $DH_CURVE != "2" && $DH_CURVE != "3" ]]; do
-				read -p "Curve [1-3]: " -e -i 2 DH_CURVE
-			done
-			case $DH_CURVE in
-				1)
-					DH_CURVE="secp256r1"
-				;;
-				2)
-					DH_CURVE="secp384r1"
-				;;
-				3)
-					DH_CURVE="secp521r1"
-				;;
-			esac
+		RSA_KEY_SIZE="2048"
 		;;
 		2)
-			echo""
-			echo "Choose which DH key size you want to use"
-			echo "   1) 2048 bits"
-			echo "   2) 3072 bits (recommended)"
-			echo "   3) 4096 bits"
-			while [[ $DH_SIZE != "1" && $DH_SIZE != "2" && $DH_SIZE != "3" ]]; do
-				read -p "DH key size [1-3]: " -e -i 2 DH_SIZE
-			done
-			case $DH_SIZE in
-				1)
-					DH_SIZE="2048"
-				;;
-				2)
-					DH_SIZE="3072"
-				;;
-				3)
-					DH_SIZE="4096"
-				;;
-			esac
-		;;
-	esac
-	echo ""
-	echo "Choose which cipher you want to use for the control channel:"
-	if [[ "$CERT_TYPE" = '1' ]]; then
-		echo "   1) ECDHE-ECDSA-AES-256-GCM-SHA384 (recommended)"
-		echo "   2) ECDHE-ECDSA-AES-128-GCM-SHA256"
-		while [[ $CC_ENC != "1" && $CC_ENC != "2" ]]; do
-			read -p "Control channel cipher [1-2]: " -e -i 1 CC_ENC
-		done
-		case $CC_ENC in
-			1)
-				CC_ENC="TLS-ECDHE-ECDSA-WITH-AES-256-GCM-SHA384"
-			;;
-			2)
-				CC_ENC="TLS-ECDHE-ECDSA-WITH-AES-128-GCM-SHA256"
-			;;
-		esac
-	elif [[ "$CERT_TYPE" = '2' ]]; then
-		echo "   1) ECDHE-RSA-AES-256-GCM-SHA384 (recommended)"
-		echo "   2) ECDHE-RSA-AES-128-GCM-SHA256"
-		while [[ $CC_ENC != "1" && $CC_ENC != "2" ]]; do
-			read -p "Control channel cipher [1-2]: " -e -i 1 CC_ENC
-		done
-		case $CC_ENC in
-			1)
-				CC_ENC="TLS-ECDHE-RSA-WITH-AES-256-GCM-SHA384"
-			;;
-			2)
-				CC_ENC="TLS-ECDHE-RSA-WITH-AES-128-GCM-SHA256"
-			;;
-		esac
-	fi
-	echo ""
-	echo "Do you want to use tls-crypt or tls-auth?"
-	echo "They both encrypt and authenticate all control channel packets with a key."
-	echo "tls-crypt is more advanced and secure than tls-auth, but it's an OpenVPN 2.4 feature."
-	echo "   1) tls-crypt (recommended)"
-	echo "   2) tls-auth (use only for OpenVPN 2.3 client compatibility)"
-	while [[ $TLS_SIG != "1" && $TLS_SIG != "2" ]]; do
-			read -p "Crontrol channel additional security layer [1-2]: " -e -i 1 TLS_SIG
-	done
-	echo""
-	if [[ $CIPHER = "cipher AES-256-GCM" ]] || [[ $CIPHER = "cipher AES-192-GCM" ]] || [[ $CIPHER = "cipher AES-128-GCM" ]]; then
-		echo "Choose which message digest algorithm you want to use for the tls-auth/tls-crypt control channel packets:"
-	elif [[ $CIPHER = "cipher AES-256-CBC" ]] || [[ $CIPHER = "cipher AES-192-CBC" ]] || [[ $CIPHER = "cipher AES-128-CBC" ]]; then
-		echo "Choose which message digest algorithm you want to use for the data channel packets"
-		echo "and the tls-auth/tls-crypt control channel packets:"
-	fi
-	echo "   1) SHA-256"
-	echo "   2) SHA-384 (recommended)"
-	echo "   3) SHA-512"
-		while [[ $HMAC_AUTH != "1" && $HMAC_AUTH != "2" && $HMAC_AUTH != "3" ]]; do
-			read -p "HMAC authentication algorithm [1-3]: " -e -i 2 HMAC_AUTH
-	done
-	case $HMAC_AUTH in
-		1)
-			HMAC_AUTH="SHA256"
-		;;
-		2)
-			HMAC_AUTH="SHA384"
+		RSA_KEY_SIZE="3072"
 		;;
 		3)
-			HMAC_AUTH="SHA512"
+		RSA_KEY_SIZE="4096"
 		;;
 	esac
 	echo ""
@@ -499,22 +320,32 @@ else
 	if [[ "$OS" = 'debian' ]]; then
 		apt-get install ca-certificates -y
 		# We add the OpenVPN repo to get the latest version.
+		# Debian 7
+		if [[ "$VERSION_ID" = 'VERSION_ID="7"' ]]; then
+			echo "deb http://build.openvpn.net/debian/openvpn/stable wheezy main" > /etc/apt/sources.list.d/openvpn.list
+			wget -O - https://swupdate.openvpn.net/repos/repo-public.gpg | apt-key add -
+			apt-get update
+		fi
 		# Debian 8
 		if [[ "$VERSION_ID" = 'VERSION_ID="8"' ]]; then
 			echo "deb http://build.openvpn.net/debian/openvpn/stable jessie main" > /etc/apt/sources.list.d/openvpn.list
 			wget -O - https://swupdate.openvpn.net/repos/repo-public.gpg | apt-key add -
+			apt update
+		fi
+		# Ubuntu 12.04
+		if [[ "$VERSION_ID" = 'VERSION_ID="12.04"' ]]; then
+			echo "deb http://build.openvpn.net/debian/openvpn/stable precise main" > /etc/apt/sources.list.d/openvpn.list
+			wget -O - https://swupdate.openvpn.net/repos/repo-public.gpg | apt-key add -
+			apt-get update
+		fi
 		# Ubuntu 14.04
-		elif [[ "$VERSION_ID" = 'VERSION_ID="14.04"' ]]; then
+		if [[ "$VERSION_ID" = 'VERSION_ID="14.04"' ]]; then
 			echo "deb http://build.openvpn.net/debian/openvpn/stable trusty main" > /etc/apt/sources.list.d/openvpn.list
 			wget -O - https://swupdate.openvpn.net/repos/repo-public.gpg | apt-key add -
-		# Ubuntu 16.04
-		elif [[ "$VERSION_ID" = 'VERSION_ID="16.04"' ]]; then
-			echo "deb http://build.openvpn.net/debian/openvpn/stable xenial main" > /etc/apt/sources.list.d/openvpn.list
-			wget -O - https://swupdate.openvpn.net/repos/repo-public.gpg | apt-key add -
+			apt-get update
 		fi
-		# Ubuntu >= 17.04 and Debian > 9 have OpenVPN 2.4 without the need of a third party repository.
+		# Ubuntu >= 16.04 and Debian > 8 have OpenVPN > 2.3.3 without the need of a third party repository.
 		# The we install OpenVPN
-		apt-get update
 		apt-get install openvpn iptables openssl wget ca-certificates curl -y
 	elif [[ "$OS" = 'centos' ]]; then
 		yum install epel-release -y
@@ -547,7 +378,6 @@ RemainAfterExit=yes
 
 [Install]
 WantedBy=multi-user.target" > /etc/systemd/system/rc-local.service
-                        touch /etc/rc.local
 			chmod +x /etc/rc.local
 			systemctl enable rc-local.service
 			if ! grep '#!' $RCLOCAL; then
@@ -563,10 +393,6 @@ WantedBy=multi-user.target" > /etc/systemd/system/rc-local.service
 			systemctl start iptables
 		fi
 	fi
-
-	#To remember if we use tls-crypt or tls-auth when generating a new client conf
-	echo $TLS_SIG > /etc/openvpn/TLS_SIG
-
 	# Find out if the machine uses nogroup or nobody for the permissionless group
 	if grep -qs "^nogroup:" /etc/group; then
 	        NOGROUP=nogroup
@@ -586,42 +412,27 @@ WantedBy=multi-user.target" > /etc/systemd/system/rc-local.service
 	chown -R root:root /etc/openvpn/easy-rsa/
 	rm -rf ~/EasyRSA-3.0.3.tgz
 	cd /etc/openvpn/easy-rsa/
-	if [[ $CERT_TYPE == "1" ]]; then
-		echo "set_var EASYRSA_ALGO ec
-set_var EASYRSA_CURVE $CERT_CURVE" > vars
-	elif [[ $CERT_TYPE == "2" ]]; then
-		echo "set_var EASYRSA_KEY_SIZE $RSA_SIZE" > vars
-	fi
-	echo 'set_var EASYRSA_DIGEST "'$CERT_HASH'"' >> vars
+	echo "set_var EASYRSA_KEY_SIZE $RSA_KEY_SIZE" > vars
 	# Create the PKI, set up the CA, the DH params and the server + client certificates
 	./easyrsa init-pki
 	./easyrsa --batch build-ca nopass
-	if [[ $DH_TYPE == "2" ]]; then
-		openssl dhparam -out dh.pem $DH_SIZE
-	fi
+	openssl dhparam -out dh.pem $DH_KEY_SIZE
 	./easyrsa build-server-full server nopass
 	./easyrsa build-client-full $CLIENT nopass
-	./easyrsa gen-crl
-	if [[ $TLS_SIG == "1" ]]; then
-		# Generate tls-crypt key
-		openvpn --genkey --secret /etc/openvpn/tls-crypt.key
-	elif [[ $TLS_SIG == "2" ]]; then
-		# Generate tls-auth key
-		openvpn --genkey --secret /etc/openvpn/tls-auth.key
-	fi
+	EASYRSA_CRL_DAYS=3650 ./easyrsa gen-crl
+	# generate tls-auth key
+	openvpn --genkey --secret /etc/openvpn/tls-auth.key
 	# Move all the generated files
-	cp pki/ca.crt pki/private/ca.key pki/issued/server.crt pki/private/server.key /etc/openvpn/easy-rsa/pki/crl.pem /etc/openvpn
-	if [[ $DH_TYPE == "2" ]]; then
-		cp dh.pem /etc/openvpn
-	fi
+	cp pki/ca.crt pki/private/ca.key dh.pem pki/issued/server.crt pki/private/server.key /etc/openvpn/easy-rsa/pki/crl.pem /etc/openvpn
 	# Make cert revocation list readable for non-root
 	chmod 644 /etc/openvpn/crl.pem
 
 	# Generate server.conf
-	echo "port $PORT" > /etc/openvpn/server.conf
-	if [[ "$PROTOCOL" = '1' ]]; then
+	echo "local $IP" > /etc/openvpn/server.conf
+	echo "port $PORT" >> /etc/openvpn/server.conf
+	if [[ "$PROTOCOL" = 'UDP' ]]; then
 		echo "proto udp" >> /etc/openvpn/server.conf
-	elif [[ "$PROTOCOL" = '2' ]]; then
+	elif [[ "$PROTOCOL" = 'TCP' ]]; then
 		echo "proto tcp" >> /etc/openvpn/server.conf
 	fi
 	echo "dev tun
@@ -661,30 +472,23 @@ ifconfig-pool-persist ipp.txt" >> /etc/openvpn/server.conf
 		echo 'push "dhcp-option DNS 77.88.8.8"' >> /etc/openvpn/server.conf
 		echo 'push "dhcp-option DNS 77.88.8.1"' >> /etc/openvpn/server.conf
 		;;
+		7) #AdGuard DNS
+		echo 'push "dhcp-option DNS 176.103.130.130"' >> /etc/openvpn/server.conf
+		echo 'push "dhcp-option DNS 176.103.130.131"' >> /etc/openvpn/server.conf
+		;;
 	esac
 echo 'push "redirect-gateway def1 bypass-dhcp" '>> /etc/openvpn/server.conf
 echo "crl-verify crl.pem
 ca ca.crt
 cert server.crt
-key server.key" >> /etc/openvpn/server.conf
-if [[ $TLS_SIG == "1" ]]; then
-	echo "tls-crypt tls-crypt.key 0" >> /etc/openvpn/server.conf
-elif [[ $TLS_SIG == "2" ]]; then
-	echo "tls-auth tls-auth.key 0" >> /etc/openvpn/server.conf
-fi
-if [[ $DH_TYPE == "1" ]]; then
-	echo "dh none
-ecdh-curve $DH_CURVE" >> /etc/openvpn/server.conf
-elif [[ $DH_TYPE == "2" ]]; then
-	echo "dh dh.pem" >> /etc/openvpn/server.conf
-fi
-echo "auth $HMAC_AUTH
+key server.key
+tls-auth tls-auth.key 0
+dh dh.pem
+auth SHA256
 $CIPHER
-ncp-disable
 tls-server
 tls-version-min 1.2
-tls-cipher $CC_ENC
-compress $COMPRESSION
+tls-cipher TLS-DHE-RSA-WITH-AES-128-GCM-SHA256
 status openvpn.log
 verb 3" >> /etc/openvpn/server.conf
 
@@ -713,10 +517,10 @@ verb 3" >> /etc/openvpn/server.conf
 		# We don't use --add-service=openvpn because that would only work with
 		# the default port. Using both permanent and not permanent rules to
 		# avoid a firewalld reload.
-		if [[ "$PROTOCOL" = '1' ]]; then
+		if [[ "$PROTOCOL" = 'UDP' ]]; then
 			firewall-cmd --zone=public --add-port=$PORT/udp
 			firewall-cmd --permanent --zone=public --add-port=$PORT/udp
-		elif [[ "$PROTOCOL" = '2' ]]; then
+		elif [[ "$PROTOCOL" = 'TCP' ]]; then
 			firewall-cmd --zone=public --add-port=$PORT/tcp
 			firewall-cmd --permanent --zone=public --add-port=$PORT/tcp
 		fi
@@ -727,16 +531,16 @@ verb 3" >> /etc/openvpn/server.conf
 		# If iptables has at least one REJECT rule, we asume this is needed.
 		# Not the best approach but I can't think of other and this shouldn't
 		# cause problems.
-		if [[ "$PROTOCOL" = '1' ]]; then
+		if [[ "$PROTOCOL" = 'UDP' ]]; then
 			iptables -I INPUT -p udp --dport $PORT -j ACCEPT
-		elif [[ "$PROTOCOL" = '2' ]]; then
+		elif [[ "$PROTOCOL" = 'TCP' ]]; then
 			iptables -I INPUT -p tcp --dport $PORT -j ACCEPT
 		fi
 		iptables -I FORWARD -s 10.8.0.0/24 -j ACCEPT
 		iptables -I FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT
-		if [[ "$PROTOCOL" = '1' ]]; then
+		if [[ "$PROTOCOL" = 'UDP' ]]; then
 			sed -i "1 a\iptables -I INPUT -p udp --dport $PORT -j ACCEPT" $RCLOCAL
-		elif [[ "$PROTOCOL" = '2' ]]; then
+		elif [[ "$PROTOCOL" = 'TCP' ]]; then
 			sed -i "1 a\iptables -I INPUT -p tcp --dport $PORT -j ACCEPT" $RCLOCAL
 		fi
 		sed -i "1 a\iptables -I FORWARD -s 10.8.0.0/24 -j ACCEPT" $RCLOCAL
@@ -750,9 +554,9 @@ verb 3" >> /etc/openvpn/server.conf
 				if ! hash semanage 2>/dev/null; then
 					yum install policycoreutils-python -y
 				fi
-				if [[ "$PROTOCOL" = '1' ]]; then
+				if [[ "$PROTOCOL" = 'UDP' ]]; then
 					semanage port -a -t openvpn_port_t -p udp $PORT
-				elif [[ "$PROTOCOL" = '2' ]]; then
+				elif [[ "$PROTOCOL" = 'TCP' ]]; then
 					semanage port -a -t openvpn_port_t -p tcp $PORT
 				fi
 			fi
@@ -810,9 +614,9 @@ verb 3" >> /etc/openvpn/server.conf
 	fi
 	# client-template.txt is created so we have a template to add further users later
 	echo "client" > /etc/openvpn/client-template.txt
-	if [[ "$PROTOCOL" = '1' ]]; then
+	if [[ "$PROTOCOL" = 'UDP' ]]; then
 		echo "proto udp" >> /etc/openvpn/client-template.txt
-	elif [[ "$PROTOCOL" = '2' ]]; then
+	elif [[ "$PROTOCOL" = 'TCP' ]]; then
 		echo "proto tcp-client" >> /etc/openvpn/client-template.txt
 	fi
 	echo "remote $IP $PORT
@@ -822,14 +626,12 @@ nobind
 persist-key
 persist-tun
 remote-cert-tls server
-auth $HMAC_AUTH
+auth SHA256
 $CIPHER
 tls-client
 tls-version-min 1.2
-tls-cipher $CC_ENC
+tls-cipher TLS-DHE-RSA-WITH-AES-128-GCM-SHA256
 setenv opt block-outside-dns
-compress $COMPRESSION
-auth-nocache
 verb 3" >> /etc/openvpn/client-template.txt
 
 	# Generate the custom client.ovpn
@@ -841,9 +643,3 @@ verb 3" >> /etc/openvpn/client-template.txt
 	echo "If you want to add more clients, you simply need to run this script another time!"
 fi
 exit 0;
-
-# internet-routing
-iptables -t nat -F POSTROUTING
-echo 1 > /proc/sys/net/ipv4/ip_forward
-iptables -t nat -A POSTROUTING -o eth0 -s 10.8.0.0/24 -j MASQUERADE
-
