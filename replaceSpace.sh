@@ -1,7 +1,3 @@
-#!/system/xbin/bash
-
-set -x
-
 #! /bin/sh
 # Name: replaceSpace
 # Ersetzt Leerzeichen in Datei- bzw. Verzeichnisnamen durch '_'
@@ -31,13 +27,3 @@ do
          ;;
    esac
 done
-# Beginne installieren der apks
-finds=$(find $1*.apk)
-for wort in $finds
-do
-	echo "Installiere $wort"
-	pm install "$wort"
-done
-
-echo "Fertig!!!"
-
