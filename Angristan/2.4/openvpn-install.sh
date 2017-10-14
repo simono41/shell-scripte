@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -ex
+
 # Secure OpenVPN server installer for Debian, Ubuntu, CentOS and Arch Linux
 # https://github.com/Angristan/OpenVPN-install
 
@@ -95,7 +97,7 @@ if [[ "$IP" = "" ]]; then
 	IP=$(wget -qO- ipv4.icanhazip.com)
 fi
 # Get Internet network interface with default route
-NIC=$(ip -4 route ls | grep default | grep -Po '(?<=dev )(\S+)')
+NIC=$(ip -4 route ls | grep default -m 1 | grep -Po '(?<=dev )(\S+)')
 
 if [[ -e /etc/openvpn/server.conf ]]; then
 	while :
@@ -545,6 +547,7 @@ RemainAfterExit=yes
 
 [Install]
 WantedBy=multi-user.target" > /etc/systemd/system/rc-local.service
+			touch /etc/rc.local
 			chmod +x /etc/rc.local
 			systemctl enable rc-local.service
 			if ! grep '#!' $RCLOCAL; then
@@ -682,6 +685,7 @@ tls-server
 tls-version-min 1.2
 tls-cipher $CC_ENC
 compress $COMPRESSION
+auth-nocache
 status openvpn.log
 verb 3" >> /etc/openvpn/server.conf
 
@@ -824,6 +828,8 @@ $CIPHER
 tls-client
 tls-version-min 1.2
 tls-cipher $CC_ENC
+compress $COMPRESSION
+auth-nocache
 setenv opt block-outside-dns
 verb 3" >> /etc/openvpn/client-template.txt
 
