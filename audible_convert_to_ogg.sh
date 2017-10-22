@@ -11,7 +11,7 @@ do
         FILENAME=${1##*/} # Dateiname ist alles ab dem letzten '/'
         echo "$FILENAME"
         # guck dir die Ausgabe erstmal an - wenn alles passt kannst Du das "echo" weglassen
-        ffmpeg -activation_bytes $code -i "$FILENAME" -vn -n -c:a libvorbis -b:a 128k "${FILENAME%.*}.ogg"
+        ffmpeg -activation_bytes $code -i "$FILENAME" -vn -n -c:a libvorbis -b:a 128k "${FILENAME%.*}.ogg" &
         shift
         cd -
 done
