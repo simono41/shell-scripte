@@ -1,6 +1,7 @@
 #!/bin/bash
 
-read -p "Wie heißen die activation_bytes? : " code
+code="$1"
+shift
 
 while (( "$#" ))
 do
@@ -15,4 +16,4 @@ do
         cd -
 done
 
-#convert.sh <Ordner>/*.flv
+#convert.sh code <Ordner>/*.ogg
