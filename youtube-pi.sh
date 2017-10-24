@@ -45,7 +45,7 @@ fi
 
 if [ "$suche" == "suche" ]
 then
-youtube-dl "ytsearch:$url" -q --force-ipv4 $format -o- | mplayer $voll -cache 8192 -
+youtube-dl "ytsearch:$url" -q --force-ipv4 $format -o- | omxplayer -p -o hdmi $voll -cache 8192 -
 else
-youtube-dl -q --force-ipv4 $format -o- $url | mplayer $voll -cache 8192 -
+youtube-dl -q --force-ipv4 $format -o- $url | omxplayer -p -o hdmmi $voll -cache 8192 -
 fi
