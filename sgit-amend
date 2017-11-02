@@ -1,0 +1,9 @@
+#!/bin/bash
+
+set -ex
+
+git add --all
+git commit --amend
+git show
+git push -f
+git status
