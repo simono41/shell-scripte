@@ -61,8 +61,10 @@ sgdisk -a 2048 -n 3::+8G -c 3:"Linux swap" -t 3:8200 ${device}
 sgdisk -a 2048 -n 4:: -c 4:"Linux filesystem" -t 4:8300 ${device}
 
 if [ "${verschluesselung}" == "y" ]; then
-    cryptsetup -c aes-xts-plain64 -y -s 512 luksFormat /dev/sda4
-    cryptsetup luksOpen /dev/sda4 luks0
+    cryptsetup -c aes-xts-plain64 -y -s 512 luksFormat ${device}${rootpartitionnummer} <<EOT
+YES
+EOT
+    cryptsetup luksOpen ${device}${rootpartitionnummer} luks0
 fi
 
 }
@@ -75,8 +77,10 @@ sgdisk -a 2048 -n 2::+1G -c 2:"EFI Boot Partition" -t 2:ef00 ${device}
 sgdisk -a 2048 -n 3:: -c 4:"Linux filesystem" -t 3:8300 ${device}
 
 if [ "${verschluesselung}" == "y" ]; then
-    cryptsetup -c aes-xts-plain64 -y -s 512 luksFormat /dev/sda4
-    cryptsetup luksOpen /dev/sda4 luks0
+    cryptsetup -c aes-xts-plain64 -y -s 512 luksFormat ${device}${rootpartitionnummer} <<EOT
+YES
+EOT
+    cryptsetup luksOpen ${device}${rootpartitionnummer} luks0
 fi
 
 
