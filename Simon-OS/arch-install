@@ -268,8 +268,8 @@ echo -e "PARTUUID=${bootbind} /boot vfat rw,relatime 0 2" >> ${mountpoint}/etc/f
 
 if [ "${swap}" != "n" ]; then
     if [ "${verschluesselung}" == "y" ]; then
-        swappartition=$(blkid -s UUID -o value ${device}${swappartitionnummer})
-        echo "swap UUID=${swappartition} /dev/urandom swap,cipher=aes-cbc-essiv:sha256,size=256" >> ${mountpoint}/etc/crypttab
+        swappartition=$(blkid -s PARTUUID -o value ${device}${swappartitionnummer})
+        echo "swap PARTUUID=${swappartition} /dev/urandom swap,cipher=aes-cbc-essiv:sha256,size=256" >> ${mountpoint}/etc/crypttab
     else
         swappartition=$(blkid -s PARTUUID -o value ${device}${swappartitionnummer})
         echo "PARTUUID=${swappartition} none swap defaults 0 0" >> ${mountpoint}/etc/fstab
@@ -301,8 +301,8 @@ fi
 
 if [ "${verschluesselung}" == "y" ]; then
     if [ "${boot}" == "grub" ]; then
-        tobootdevice=$(blkid -s UUID -o value ${device}${rootpartitionnummer})
-        sed -i 's/GRUB_CMDLINE_LINUX=.*$/GRUB_CMDLINE_LINUX="cryptdevice=UUID='$tobootdevice':luks0"/' ${mountpoint}/etc/default/grub
+        tobootdevice=$(blkid -s PARTUUID -o value ${device}${rootpartitionnummer})
+        sed -i 's/GRUB_CMDLINE_LINUX=.*$/GRUB_CMDLINE_LINUX="cryptdevice=PARTUUID='$tobootdevice':luks0"/' ${mountpoint}/etc/default/grub
         echo "GRUB_ENABLE_CRYPTODISK=y" >> ${mountpoint}/etc/default/grub
     fi
 fi
@@ -513,7 +513,7 @@ if [ "${swap}" == "y" ]; then
     parameter="${parameter}resume=PARTUUID=${swappartitionpart} "
 fi
 if [ "${verschluesselung}" == "y" ]; then
-    parameter="${parameter}cryptdevice=UUID=${tobootdevice}:luks0 "
+    parameter="${parameter}cryptdevice=PARTUUID=${tobootdevice}:luks0 "
 fi
 if [ "${dateisystem}" == "btrfs" ]; then
     parameter="${parameter}rootflags=subvol=__current/ROOT "
@@ -641,7 +641,7 @@ if [ "${update}" != "n" ]; then
     if [ "${usbsecret}" == "y" ]; then
         read -p "Welcher USB-Stick soll ausgewählt werden für die USB-secret Schlüssel?: /dev/sdb1 " usbsecretdevice
         [[ -z "${usbsecretdevice}" ]] && device=/dev/sdb1
-        usbsecretdeviceuuid=$(blkid -s UUID -o value ${usbsecretdevice})
+        usbsecretdeviceuuid=$(blkid -s PARTUUID -o value ${usbsecretdevice})
         [[ -z "${usbsecretdeviceuuid}" ]] && mkfs.ext4 ${usbsecretdevice}
     fi
 fi
