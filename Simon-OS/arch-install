@@ -210,8 +210,12 @@ if [ "${verschluesselung}" == "y" ]; then
     parameter="${parameter}encrypt "
 fi
 parameter="${parameter}block filesystems keyboard "
-if [ "${dateisystem}" == "btrfs" ]; then
-    parameter="${parameter}btrfs "
+if [ "${verschluesselung}" == "y" ]; then
+    echo "btrfs-hook wird übersprungen!"
+else
+    if [ "${dateisystem}" == "btrfs" ]; then
+        parameter="${parameter}btrfs "
+    fi
 fi
 if [ "${usbsecret}" == "y" ]; then
     parameter="${parameter}usbsecret "
@@ -509,7 +513,7 @@ swappartitionpart=$(blkid -s PARTUUID -o value ${device}${swappartitionnummer})
 # zurücksetzen der parameter
 parameter=""
 
-if [ "${swap}" == "y" ]; then
+if [ "${swap}" != "n" ]; then
     parameter="${parameter}resume=PARTUUID=${swappartitionpart} "
 fi
 if [ "${verschluesselung}" == "y" ]; then
@@ -646,7 +650,9 @@ if [ "${update}" != "n" ]; then
     fi
 fi
 
-read -p "Soll die Festplatte verschlüsselt werden? : [y/N] " verschluesselung
+if [ "${raid}" == "n" ]; then
+    read -p "Soll die Festplatte verschlüsselt werden? : [y/N] " verschluesselung
+fi
 
 # berechnungen
 
