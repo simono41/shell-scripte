@@ -61,10 +61,9 @@ sgdisk -a 2048 -n 3::+8G -c 3:"Linux swap" -t 3:8200 ${device}
 sgdisk -a 2048 -n 4:: -c 4:"Linux filesystem" -t 4:8300 ${device}
 
 if [ "${verschluesselung}" == "y" ]; then
-    cryptsetup -c aes-xts-plain64 -y -s 512 luksFormat ${device}${rootpartitionnummer} <<EOT
-YES
-EOT
+    cryptsetup -c aes-xts-plain64 -y -s 512 luksFormat ${device}${rootpartitionnummer}
     cryptsetup luksOpen ${device}${rootpartitionnummer} luks0
+    deviceluks="/dev/mapper/luks0"
 fi
 
 }
@@ -77,10 +76,9 @@ sgdisk -a 2048 -n 2::+1G -c 2:"EFI Boot Partition" -t 2:ef00 ${device}
 sgdisk -a 2048 -n 3:: -c 4:"Linux filesystem" -t 3:8300 ${device}
 
 if [ "${verschluesselung}" == "y" ]; then
-    cryptsetup -c aes-xts-plain64 -y -s 512 luksFormat ${device}${rootpartitionnummer} <<EOT
-YES
-EOT
+    cryptsetup -c aes-xts-plain64 -y -s 512 luksFormat ${device}${rootpartitionnummer}
     cryptsetup luksOpen ${device}${rootpartitionnummer} luks0
+    deviceluks="/dev/mapper/luks0"
 fi
 
 
@@ -181,8 +179,13 @@ if [ "${dateisystem}" == "btrfs" ]; then
 
 elif [ "${dateisystem}" == "ext4" ]; then
     echo "mit j bestätigen"
+if [ "${verschluesselung}" == "y" ]; then
+    mkfs.ext4 -L p_arch ${deviceluks} #ext4
+    mount ${deviceluks} ${mountpoint}
+else
     mkfs.ext4 -L p_arch ${device}${rootpartitionnummer} #ext4
     mount ${device}${rootpartitionnummer} ${mountpoint}
+fi
 
 fi
 
@@ -340,11 +343,26 @@ fi
 
 function btrfsformat() {
 if [ "$raid" == "raid0" ]; then
+if [ "${verschluesselung}" == "y" ]; then
+    mkfs.btrfs -f -m raid10 -d raid10 ${deviceluks} ${device1}
+else
     mkfs.btrfs -f -m raid0 -d raid0 ${device}${rootpartitionnummer} ${device1}
+fi
 elif [ "$raid" == "raid1" ]; then
+if [ "${verschluesselung}" == "y" ]; then
+    mkfs.btrfs -f -m raid10 -d raid10 ${deviceluks} ${device1}
+else
     mkfs.btrfs -f -m raid1 -d raid1 ${device}${rootpartitionnummer} ${device1}
+fi
 elif [ "$raid" == "raid10" ]; then
+if [ "${verschluesselung}" == "y" ]; then
+    mkfs.btrfs -f -m raid10 -d raid10 ${deviceluks} ${device1}
+else
     mkfs.btrfs -f -m raid10 -d raid10 ${device}${rootpartitionnummer} ${device1}
+fi
+else
+if [ "${verschluesselung}" == "y" ]; then
+    mkfs.btrfs -f -m single ${deviceluks}
 else
     mkfs.btrfs -f -m single ${device}${rootpartitionnummer}
 fi
