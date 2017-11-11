@@ -60,6 +60,11 @@ sgdisk -a 2048 -n 2::+1G -c 2:"EFI Boot Partition" -t 2:ef00 ${device}
 sgdisk -a 2048 -n 3::+8G -c 3:"Linux swap" -t 3:8200 ${device}
 sgdisk -a 2048 -n 4:: -c 4:"Linux filesystem" -t 4:8300 ${device}
 
+if [ "${verschluesselung}" == "y" ]; then
+    cryptsetup -c aes-xts-plain64 -y -s 512 luksFormat /dev/sda4
+    cryptsetup luksOpen /dev/sda4 luks0
+fi
+
 }
 
 function partionierenohneswap() {
@@ -68,6 +73,12 @@ sgdisk -o ${device}
 sgdisk -a 2048 -n 1::+1024K -c 1:"BIOS Boot Partition" -t 1:ef02 ${device}
 sgdisk -a 2048 -n 2::+1G -c 2:"EFI Boot Partition" -t 2:ef00 ${device}
 sgdisk -a 2048 -n 3:: -c 4:"Linux filesystem" -t 3:8300 ${device}
+
+if [ "${verschluesselung}" == "y" ]; then
+    cryptsetup -c aes-xts-plain64 -y -s 512 luksFormat /dev/sda4
+    cryptsetup luksOpen /dev/sda4 luks0
+fi
+
 
 }
 
@@ -196,6 +207,9 @@ parameter="base udev "
 if [ "${swap}" != "n" ]; then
     parameter="${parameter}resume "
 fi
+if [ "${verschluesselung}" == "y" ]; then
+    parameter="${parameter}encrypt "
+fi
 parameter="${parameter}block filesystems keyboard "
 if [ "${dateisystem}" == "btrfs" ]; then
     parameter="${parameter}btrfs "
@@ -293,7 +307,31 @@ if [ "${usbsecret}" == "y" ]; then
     usbsecret
 fi
 
+if [ "${verschluesselung}" == "y" ]; then
+    if [ "${boot}" == "grub" ]; then
+        tobootdevice=$(blkid -s UUID -o value ${device}${rootpartitionnummer})
+        sed -i 's/GRUB_CMDLINE_LINUX=.*$/GRUB_CMDLINE_LINUX="cryptdevice=UUID='$tobootdevice':luks0"/' ${mountpoint}/etc/default/grub
+    fi
+fi
+
+
+
+
+
+
+
+
+
+
+
+
 #sie könne hier ihre scripte die bei der installation ausgeführt werden sollen hinzufügen :D
+
+
+
+
+
+
 }
 
 function btrfsformat() {
@@ -576,6 +614,7 @@ if [ "${update}" != "n" ]; then
     fi
 fi
 
+read -p "Soll die Festplatte verschlüsselt werden? : [y/N] " verschluesselung
 
 # berechnungen
 
@@ -608,13 +647,13 @@ if [ "${raid}" != "n" ]; then
     echo "Festplatten: ${device1}"
 fi
 echo "Dateisystem: ${dateisystem}"
-echo "System-Partition ${speicher}"
-if [ "${swap}" != "n" ]; then
-    echo "Swap-partition ${swapspeicher}"
-fi
-if [ "${swapfile}" == "y" ]; then
-    echo "Swapfile ${swapfilespeicher}"
-fi
+#echo "System-Partition ${speicher}"
+#if [ "${swap}" != "n" ]; then
+#    echo "Swap-partition ${swapspeicher}"
+#fi
+#if [ "${swapfile}" == "y" ]; then
+#    echo "Swapfile ${swapfilespeicher}"
+#fi
 echo "Rootpasswort: ${pass}"
 echo "Architektur: $(uname -m)"
 echo "Installation: ${install}"
@@ -632,6 +671,10 @@ if [ "${usbsecret}" == "y" ]; then
     echo "USB-UIDD: ${usbsecretdeviceuuid}"
     echo "USB-Label: ${usbsecretdevice}"
 fi
+if [ "${verschluesselung}" == "y" ]; then
+    echo "Fesptplatte mit Luks 512KB verschlüsselung: aktiv"
+fi
+
 
 # Partitionierung
 
