@@ -181,13 +181,13 @@ if [ "${dateisystem}" == "btrfs" ]; then
 
 elif [ "${dateisystem}" == "ext4" ]; then
     echo "mit j bestätigen"
-if [ "${verschluesselung}" == "y" ]; then
-    mkfs.ext4 -L p_arch ${deviceluks} #ext4
-    mount ${deviceluks} ${mountpoint}
-else
-    mkfs.ext4 -L p_arch ${device}${rootpartitionnummer} #ext4
-    mount ${device}${rootpartitionnummer} ${mountpoint}
-fi
+    if [ "${verschluesselung}" == "y" ]; then
+        mkfs.ext4 -L p_arch ${deviceluks} #ext4
+        mount ${deviceluks} ${mountpoint}
+    else
+        mkfs.ext4 -L p_arch ${device}${rootpartitionnummer} #ext4
+        mount ${device}${rootpartitionnummer} ${mountpoint}
+    fi
 
 fi
 
@@ -255,12 +255,19 @@ if [ "${dateisystem}" == "btrfs" ]; then
     btrfsfstab #btrfs
 
     mkdir -p ${mountpoint}/run/btrfs-root
-    if [ "${Partition}" == "gpt" ]; then
-        echo "PARTUUID=${rootbind} /run/btrfs-root/ btrfs defaults 0 0" >> ${mountpoint}/etc/fstab #btrfs
-    elif [ "${Partition}" == "mbr" ]; then
-        echo "UUID=${rootbind} /run/btrfs-root/ btrfs defaults 0 0" >> ${mountpoint}/etc/fstab #btrfs
+    if [ "${verschluesselung}" == "y" ]; then
+        if [ "${Partition}" == "gpt" ]; then
+            echo "${deviceluks} /run/btrfs-root/ btrfs defaults 0 0" >> ${mountpoint}/etc/fstab #btrfs
+        elif [ "${Partition}" == "mbr" ]; then
+            echo "${deviceluks} /run/btrfs-root/ btrfs defaults 0 0" >> ${mountpoint}/etc/fstab #btrfs
+        fi
+    else
+        if [ "${Partition}" == "gpt" ]; then
+            echo "PARTUUID=${rootbind} /run/btrfs-root/ btrfs defaults 0 0" >> ${mountpoint}/etc/fstab #btrfs
+        elif [ "${Partition}" == "mbr" ]; then
+            echo "UUID=${rootbind} /run/btrfs-root/ btrfs defaults 0 0" >> ${mountpoint}/etc/fstab #btrfs
+        fi
     fi
-
     #grep -v "/var/lib" < ${mountpoint}/etc/fstab > fstab.neu; mv fstab.neu ${mountpoint}/etc/fstab
 
     echo "/run/btrfs-root/__current/ROOT/var/lib /var/lib none bind 0 0" >> ${mountpoint}/etc/fstab #btrfs
@@ -268,10 +275,18 @@ if [ "${dateisystem}" == "btrfs" ]; then
     cron
 
 elif [ "${dateisystem}" == "ext4" ]; then
-    if [ "${Partition}" == "gpt" ]; then
-        echo "PARTUUID=${rootbind} / ext4 rw,defaults,noatime,nodiratime,discard 0 0" >> ${mountpoint}/etc/fstab
-    elif [ "${Partition}" == "mbr" ]; then
-        echo "UUID=${rootbind} / ext4 rw,defaults,noatime,nodiratime,discard 0 0" >> ${mountpoint}/etc/fstab
+    if [ "${verschluesselung}" == "y" ]; then
+        if [ "${Partition}" == "gpt" ]; then
+            echo "${deviceluks} / ext4 rw,defaults,noatime,nodiratime,discard 0 0" >> ${mountpoint}/etc/fstab
+        elif [ "${Partition}" == "mbr" ]; then
+            echo "${deviceluks} / ext4 rw,defaults,noatime,nodiratime,discard 0 0" >> ${mountpoint}/etc/fstab
+        fi
+    else
+        if [ "${Partition}" == "gpt" ]; then
+            echo "PARTUUID=${rootbind} / ext4 rw,defaults,noatime,nodiratime,discard 0 0" >> ${mountpoint}/etc/fstab
+        elif [ "${Partition}" == "mbr" ]; then
+            echo "UUID=${rootbind} / ext4 rw,defaults,noatime,nodiratime,discard 0 0" >> ${mountpoint}/etc/fstab
+        fi
     fi
 fi
 
@@ -320,6 +335,7 @@ if [ "${verschluesselung}" == "y" ]; then
     if [ "${boot}" == "grub" ]; then
         tobootdevice=$(blkid -s UUID -o value ${device}${rootpartitionnummer})
         sed -i 's/GRUB_CMDLINE_LINUX=.*$/GRUB_CMDLINE_LINUX="cryptdevice=UUID='$tobootdevice':luks0"/' ${mountpoint}/etc/default/grub
+        echo "GRUB_ENABLE_CRYPTODISK=y" >> ${mountpoint}/etc/default/grub
     fi
 fi
 
@@ -345,29 +361,29 @@ fi
 
 function btrfsformat() {
 if [ "$raid" == "raid0" ]; then
-if [ "${verschluesselung}" == "y" ]; then
-    mkfs.btrfs -f -m raid10 -d raid10 ${deviceluks} ${device1}
-else
-    mkfs.btrfs -f -m raid0 -d raid0 ${device}${rootpartitionnummer} ${device1}
-fi
+    if [ "${verschluesselung}" == "y" ]; then
+        mkfs.btrfs -f -m raid10 -d raid10 ${deviceluks} ${device1}
+    else
+        mkfs.btrfs -f -m raid0 -d raid0 ${device}${rootpartitionnummer} ${device1}
+    fi
 elif [ "$raid" == "raid1" ]; then
-if [ "${verschluesselung}" == "y" ]; then
-    mkfs.btrfs -f -m raid10 -d raid10 ${deviceluks} ${device1}
-else
-    mkfs.btrfs -f -m raid1 -d raid1 ${device}${rootpartitionnummer} ${device1}
-fi
+    if [ "${verschluesselung}" == "y" ]; then
+        mkfs.btrfs -f -m raid10 -d raid10 ${deviceluks} ${device1}
+    else
+        mkfs.btrfs -f -m raid1 -d raid1 ${device}${rootpartitionnummer} ${device1}
+    fi
 elif [ "$raid" == "raid10" ]; then
-if [ "${verschluesselung}" == "y" ]; then
-    mkfs.btrfs -f -m raid10 -d raid10 ${deviceluks} ${device1}
+    if [ "${verschluesselung}" == "y" ]; then
+        mkfs.btrfs -f -m raid10 -d raid10 ${deviceluks} ${device1}
+    else
+        mkfs.btrfs -f -m raid10 -d raid10 ${device}${rootpartitionnummer} ${device1}
+    fi
 else
-    mkfs.btrfs -f -m raid10 -d raid10 ${device}${rootpartitionnummer} ${device1}
-fi
-else
-if [ "${verschluesselung}" == "y" ]; then
-    mkfs.btrfs -f -m single ${deviceluks}
-else
-    mkfs.btrfs -f -m single ${device}${rootpartitionnummer}
-fi
+    if [ "${verschluesselung}" == "y" ]; then
+        mkfs.btrfs -f -m single ${deviceluks}
+    else
+        mkfs.btrfs -f -m single ${device}${rootpartitionnummer}
+    fi
 fi
 btrfs filesystem show
 
@@ -381,93 +397,128 @@ elif [ "${Partition}" == "mbr" ]; then
     rootbind=$(blkid -s UUID -o value ${device}${rootpartitionnummer})
 fi
 
-if [ "${Partition}" == "gpt" ]; then
+if [ "${verschluesselung}" == "y" ]; then
 
-    echo -e "PARTUUID=${rootbind} / btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/ROOT 0 0" >> ${mountpoint}/etc/fstab
+    if [ "${Partition}" == "gpt" ]; then
 
-    echo -e "PARTUUID=${rootbind} /home btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/home 0 0" >> ${mountpoint}/etc/fstab
-    echo -e "PARTUUID=${rootbind} /opt btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/opt 0 0" >> ${mountpoint}/etc/fstab
-    echo -e "PARTUUID=${rootbind} /var/cache/pacman/pkg btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/var/cache/pacman/pkg 0 0" >> ${mountpoint}/etc/fstab
+        echo -e "${deviceluks} / btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/ROOT 0 0" >> ${mountpoint}/etc/fstab
 
-    # custom-mounts
-    for wort in ${mountsnaps}
-    do
-        echo -e "PARTUUID=${rootbind} ${wort} btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current${wort} 0 0" >> ${mountpoint}/etc/fstab
-    done
+        echo -e "${deviceluks} /home btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/home 0 0" >> ${mountpoint}/etc/fstab
+        echo -e "${deviceluks} /opt btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/opt 0 0" >> ${mountpoint}/etc/fstab
+        echo -e "${deviceluks} /var/cache/pacman/pkg btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/var/cache/pacman/pkg 0 0" >> ${mountpoint}/etc/fstab
+
+        # custom-mounts
+        for wort in ${mountsnaps}
+        do
+            echo -e "${deviceluks} ${wort} btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current${wort} 0 0" >> ${mountpoint}/etc/fstab
+        done
 
 
-elif [ "${Partition}" == "mbr" ]; then
+    elif [ "${Partition}" == "mbr" ]; then
 
-    echo -e "UUID=${rootbind} / btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/ROOT 0 0" >> ${mountpoint}/etc/fstab
+        echo -e "UUID=${rootbind} / btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/ROOT 0 0" >> ${mountpoint}/etc/fstab
 
-    echo -e "UUID=${rootbind} /home btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/home 0 0" >> ${mountpoint}/etc/fstab
-    echo -e "UUID=${rootbind} /opt btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/opt 0 0" >> ${mountpoint}/etc/fstab
-    echo -e "UUID=${rootbind} /var/cache/pacman/pkg btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/var/cache/pacman/pkg 0 0" >> ${mountpoint}/etc/fstab
+        echo -e "UUID=${rootbind} /home btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/home 0 0" >> ${mountpoint}/etc/fstab
+        echo -e "UUID=${rootbind} /opt btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/opt 0 0" >> ${mountpoint}/etc/fstab
+        echo -e "UUID=${rootbind} /var/cache/pacman/pkg btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/var/cache/pacman/pkg 0 0" >> ${mountpoint}/etc/fstab
 
-    # custom-mounts
-    for wort in ${mountsnaps}
-    do
-        echo -e "UUID=${rootbind} ${wort} btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current${wort} 0 0" >> ${mountpoint}/etc/fstab
-    done
+        # custom-mounts
+        for wort in ${mountsnaps}
+        do
+            echo -e "UUID=${rootbind} ${wort} btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current${wort} 0 0" >> ${mountpoint}/etc/fstab
+        done
+    fi
+
+else
+
+    if [ "${Partition}" == "gpt" ]; then
+
+        echo -e "PARTUUID=${rootbind} / btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/ROOT 0 0" >> ${mountpoint}/etc/fstab
+
+        echo -e "PARTUUID=${rootbind} /home btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/home 0 0" >> ${mountpoint}/etc/fstab
+        echo -e "PARTUUID=${rootbind} /opt btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/opt 0 0" >> ${mountpoint}/etc/fstab
+        echo -e "PARTUUID=${rootbind} /var/cache/pacman/pkg btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/var/cache/pacman/pkg 0 0" >> ${mountpoint}/etc/fstab
+
+        # custom-mounts
+        for wort in ${mountsnaps}
+        do
+            echo -e "PARTUUID=${rootbind} ${wort} btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current${wort} 0 0" >> ${mountpoint}/etc/fstab
+        done
+
+
+    elif [ "${Partition}" == "mbr" ]; then
+
+        echo -e "UUID=${rootbind} / btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/ROOT 0 0" >> ${mountpoint}/etc/fstab
+
+        echo -e "UUID=${rootbind} /home btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/home 0 0" >> ${mountpoint}/etc/fstab
+        echo -e "UUID=${rootbind} /opt btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/opt 0 0" >> ${mountpoint}/etc/fstab
+        echo -e "UUID=${rootbind} /var/cache/pacman/pkg btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/var/cache/pacman/pkg 0 0" >> ${mountpoint}/etc/fstab
+
+        # custom-mounts
+        for wort in ${mountsnaps}
+        do
+            echo -e "UUID=${rootbind} ${wort} btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current${wort} 0 0" >> ${mountpoint}/etc/fstab
+        done
+
+    fi
 
 fi
-
 }
 
 function btrfsmount() {
 #[[ -z "${device}" ]] && device=${2}
 
 if [ "${1}" == "1" ] || [ "${1}" == "" ]; then
-if [ "${verschluesselung}" == "y" ]; then
-    mkdir -p /mnt/btrfs-root
-    mount -o defaults,noatime,nodiratime,space_cache,discard,ssd,compress=lzo ${deviceluks} /mnt/btrfs-root
-else
-    mkdir -p /mnt/btrfs-root
-    mount -o defaults,noatime,nodiratime,space_cache,discard,ssd,compress=lzo ${device}${rootpartitionnummer} /mnt/btrfs-root
-fi
+    if [ "${verschluesselung}" == "y" ]; then
+        mkdir -p /mnt/btrfs-root
+        mount -o defaults,noatime,nodiratime,space_cache,discard,ssd,compress=lzo ${deviceluks} /mnt/btrfs-root
+    else
+        mkdir -p /mnt/btrfs-root
+        mount -o defaults,noatime,nodiratime,space_cache,discard,ssd,compress=lzo ${device}${rootpartitionnummer} /mnt/btrfs-root
+    fi
 fi
 if [ "${1}" == "2" ] || [ "${1}" == "" ]; then
-if [ "${verschluesselung}" == "y" ]; then
-    mkdir -p ${mountpoint}
-    mount -o defaults,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/ROOT ${deviceluks} ${mountpoint}
+    if [ "${verschluesselung}" == "y" ]; then
+        mkdir -p ${mountpoint}
+        mount -o defaults,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/ROOT ${deviceluks} ${mountpoint}
 
-    mkdir -p ${mountpoint}/home
-    mkdir -p ${mountpoint}/opt
-    mkdir -p ${mountpoint}/var/cache/pacman/pkg
-    mount -o defaults,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/home ${deviceluks} ${mountpoint}/home
-    mount -o defaults,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/opt ${deviceluks} ${mountpoint}/opt
-    mount -o defaults,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/var/cache/pacman/pkg ${deviceluks} ${mountpoint}/var/cache/pacman/pkg
+        mkdir -p ${mountpoint}/home
+        mkdir -p ${mountpoint}/opt
+        mkdir -p ${mountpoint}/var/cache/pacman/pkg
+        mount -o defaults,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/home ${deviceluks} ${mountpoint}/home
+        mount -o defaults,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/opt ${deviceluks} ${mountpoint}/opt
+        mount -o defaults,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/var/cache/pacman/pkg ${deviceluks} ${mountpoint}/var/cache/pacman/pkg
 
-    # custom-mounts
-    for wort in ${mountsnaps}
-    do
-        mkdir -p ${mountpoint}${wort}
-        mount -o defaults,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current${wort} ${deviceluks} ${mountpoint}${wort}
-    done
+        # custom-mounts
+        for wort in ${mountsnaps}
+        do
+            mkdir -p ${mountpoint}${wort}
+            mount -o defaults,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current${wort} ${deviceluks} ${mountpoint}${wort}
+        done
 
-    mkdir -p ${mountpoint}/var/lib
-    mount --bind /mnt/btrfs-root/__current/ROOT/var/lib ${mountpoint}/var/lib
-else
-    mkdir -p ${mountpoint}
-    mount -o defaults,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/ROOT ${device}${rootpartitionnummer} ${mountpoint}
+        mkdir -p ${mountpoint}/var/lib
+        mount --bind /mnt/btrfs-root/__current/ROOT/var/lib ${mountpoint}/var/lib
+    else
+        mkdir -p ${mountpoint}
+        mount -o defaults,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/ROOT ${device}${rootpartitionnummer} ${mountpoint}
 
-    mkdir -p ${mountpoint}/home
-    mkdir -p ${mountpoint}/opt
-    mkdir -p ${mountpoint}/var/cache/pacman/pkg
-    mount -o defaults,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/home ${device}${rootpartitionnummer} ${mountpoint}/home
-    mount -o defaults,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/opt ${device}${rootpartitionnummer} ${mountpoint}/opt
-    mount -o defaults,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/var/cache/pacman/pkg ${device}${rootpartitionnummer} ${mountpoint}/var/cache/pacman/pkg
+        mkdir -p ${mountpoint}/home
+        mkdir -p ${mountpoint}/opt
+        mkdir -p ${mountpoint}/var/cache/pacman/pkg
+        mount -o defaults,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/home ${device}${rootpartitionnummer} ${mountpoint}/home
+        mount -o defaults,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/opt ${device}${rootpartitionnummer} ${mountpoint}/opt
+        mount -o defaults,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/var/cache/pacman/pkg ${device}${rootpartitionnummer} ${mountpoint}/var/cache/pacman/pkg
 
-    # custom-mounts
-    for wort in ${mountsnaps}
-    do
-        mkdir -p ${mountpoint}${wort}
-        mount -o defaults,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current${wort} ${device}${rootpartitionnummer} ${mountpoint}${wort}
-    done
+        # custom-mounts
+        for wort in ${mountsnaps}
+        do
+            mkdir -p ${mountpoint}${wort}
+            mount -o defaults,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current${wort} ${device}${rootpartitionnummer} ${mountpoint}${wort}
+        done
 
-    mkdir -p ${mountpoint}/var/lib
-    mount --bind /mnt/btrfs-root/__current/ROOT/var/lib ${mountpoint}/var/lib
-fi
+        mkdir -p ${mountpoint}/var/lib
+        mount --bind /mnt/btrfs-root/__current/ROOT/var/lib ${mountpoint}/var/lib
+    fi
     # boot mount
     mkdir -p ${mountpoint}/boot
     if [ "${Partition}" == "gpt" ]; then
@@ -822,16 +873,16 @@ secureumount
 
 if [ "${name}" == "debug" ]
 then
-echo "DEBEUG-MODUS"
-echo "Wenn kein befehl mehr ausgefuehrt werden muss einfach eingabetaste druecken"
-echo "Welcher befehl soll ausgefuert werden? "
+    echo "DEBEUG-MODUS"
+    echo "Wenn kein befehl mehr ausgefuehrt werden muss einfach eingabetaste druecken"
+    echo "Welcher befehl soll ausgefuert werden? "
 
-befehl=blablabla
-while [ "$befehl" != "" ]
-do
-    read -p "" befehl
-    $befehl
-done
+    befehl=blablabla
+    while [ "$befehl" != "" ]
+    do
+        read -p "" befehl
+        $befehl
+    done
 
 fi
 
@@ -910,7 +961,7 @@ if [ "${dateisystem}" == "btrfs" ]; then
 btrfs filesystem df ${mountpoint}
 fi
 echo "umount!!!"
-pause 5
+sleep 5
 secureumount
 echo ""
 echo "Fertig!!!"
