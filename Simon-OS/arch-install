@@ -22,9 +22,7 @@ function minimalinstallation() {
 function secureumount() {
     if [ "${dateisystem}" == "btrfs" ]; then
         if cat /proc/mounts | grep ${mountpoint} > /dev/null; then
-            if [ "${Partition}" == "gpt" ]; then
-                umount ${mountpoint}/boot
-            fi
+            umount ${mountpoint}/boot
         btrfs fi df ${mountpoint}
         echo "umount!!!"
         umount ${mountpoint}/home
@@ -42,9 +40,7 @@ function secureumount() {
     fi
 elif [ "${dateisystem}" == "ext4" ]; then
     if cat /proc/mounts | grep ${mountpoint} > /dev/null; then
-        if [ "${Partition}" == "gpt" ]; then
-            umount ${mountpoint}/boot
-        fi
+        umount ${mountpoint}/boot
         umount ${mountpoint}
     fi
 fi
@@ -164,14 +160,8 @@ echo ""
 function installation {
 
 #boot
-#root
-#swap
-
-#boot
 echo "formatieren"
-if [ "${Partition}" == "gpt" ]; then
-    mkfs.vfat -F 32 ${device}${bootpartitionnummer}
-fi
+mkfs.vfat -F 32 ${device}${efipartitionnummer}
 
 #root
 if [ "${dateisystem}" == "btrfs" ]; then
@@ -243,11 +233,7 @@ echo "tmpfs /tmp tmpfs defaults 0 0" >> ${mountpoint}/etc/fstab
 echo "tmpfs /dev/shm tmpfs defaults 0 0" >> ${mountpoint}/etc/fstab
 
 #fstab
-if [ "${Partition}" == "gpt" ]; then
-    rootbind=$(blkid -s PARTUUID -o value ${device}${rootpartitionnummer})
-elif [ "${Partition}" == "mbr" ]; then
-    rootbind=$(blkid -s UUID -o value ${device}${rootpartitionnummer})
-fi
+rootbind=$(blkid -s PARTUUID -o value ${device}${rootpartitionnummer})
 
 #genfstab -Up ${mountpoint} >> ${mountpoint}/etc/fstab
 
@@ -256,17 +242,9 @@ if [ "${dateisystem}" == "btrfs" ]; then
 
     mkdir -p ${mountpoint}/run/btrfs-root
     if [ "${verschluesselung}" == "y" ]; then
-        if [ "${Partition}" == "gpt" ]; then
-            echo "${deviceluks} /run/btrfs-root/ btrfs defaults 0 0" >> ${mountpoint}/etc/fstab #btrfs
-        elif [ "${Partition}" == "mbr" ]; then
-            echo "${deviceluks} /run/btrfs-root/ btrfs defaults 0 0" >> ${mountpoint}/etc/fstab #btrfs
-        fi
+        echo "${deviceluks} /run/btrfs-root/ btrfs defaults 0 0" >> ${mountpoint}/etc/fstab #btrfs
     else
-        if [ "${Partition}" == "gpt" ]; then
-            echo "PARTUUID=${rootbind} /run/btrfs-root/ btrfs defaults 0 0" >> ${mountpoint}/etc/fstab #btrfs
-        elif [ "${Partition}" == "mbr" ]; then
-            echo "UUID=${rootbind} /run/btrfs-root/ btrfs defaults 0 0" >> ${mountpoint}/etc/fstab #btrfs
-        fi
+        echo "PARTUUID=${rootbind} /run/btrfs-root/ btrfs defaults 0 0" >> ${mountpoint}/etc/fstab #btrfs
     fi
     #grep -v "/var/lib" < ${mountpoint}/etc/fstab > fstab.neu; mv fstab.neu ${mountpoint}/etc/fstab
 
@@ -276,40 +254,25 @@ if [ "${dateisystem}" == "btrfs" ]; then
 
 elif [ "${dateisystem}" == "ext4" ]; then
     if [ "${verschluesselung}" == "y" ]; then
-        if [ "${Partition}" == "gpt" ]; then
-            echo "${deviceluks} / ext4 rw,defaults,noatime,nodiratime,discard 0 0" >> ${mountpoint}/etc/fstab
-        elif [ "${Partition}" == "mbr" ]; then
-            echo "${deviceluks} / ext4 rw,defaults,noatime,nodiratime,discard 0 0" >> ${mountpoint}/etc/fstab
-        fi
+        echo "${deviceluks} / ext4 rw,defaults,noatime,nodiratime,discard 0 0" >> ${mountpoint}/etc/fstab
     else
-        if [ "${Partition}" == "gpt" ]; then
-            echo "PARTUUID=${rootbind} / ext4 rw,defaults,noatime,nodiratime,discard 0 0" >> ${mountpoint}/etc/fstab
-        elif [ "${Partition}" == "mbr" ]; then
-            echo "UUID=${rootbind} / ext4 rw,defaults,noatime,nodiratime,discard 0 0" >> ${mountpoint}/etc/fstab
-        fi
+        echo "PARTUUID=${rootbind} / ext4 rw,defaults,noatime,nodiratime,discard 0 0" >> ${mountpoint}/etc/fstab
     fi
 fi
 
-if [ "${Partition}" == "gpt" ]; then
 
-    bootbind=$(blkid -s PARTUUID -o value ${device}${bootpartitionnummer})
+bootbind=$(blkid -s PARTUUID -o value ${device}${efipartitionnummer})
 
-    echo -e "PARTUUID=${bootbind} /boot vfat rw,relatime 0 2" >> ${mountpoint}/etc/fstab
+echo -e "PARTUUID=${bootbind} /boot vfat rw,relatime 0 2" >> ${mountpoint}/etc/fstab
 
-fi
 
 if [ "${swap}" != "n" ]; then
     if [ "${verschluesselung}" == "y" ]; then
         swappartition=$(blkid -s UUID -o value ${device}${swappartitionnummer})
         echo "swap UUID=${swappartition} /dev/urandom swap,cipher=aes-cbc-essiv:sha256,size=256" >> ${mountpoint}/etc/crypttab
     else
-        if [ "${Partition}" == "gpt" ]; then
-            swappartition=$(blkid -s PARTUUID -o value ${device}${swappartitionnummer})
-            echo "PARTUUID=${swappartition} none swap defaults 0 0" >> ${mountpoint}/etc/fstab
-        elif [ "${Partition}" == "mbr" ]; then
-            swappartition=$(blkid -s UUID -o value ${device}${swappartitionnummer})
-            echo "UUID=${swappartition} none swap defaults 0 0" >> ${mountpoint}/etc/fstab
-        fi
+        swappartition=$(blkid -s PARTUUID -o value ${device}${swappartitionnummer})
+        echo "PARTUUID=${swappartition} none swap defaults 0 0" >> ${mountpoint}/etc/fstab
     fi
 fi
 
@@ -396,76 +359,38 @@ btrfs filesystem show
 
 function btrfsfstab() {
 
-if [ "${Partition}" == "gpt" ]; then
-    rootbind=$(blkid -s PARTUUID -o value ${device}${rootpartitionnummer})
-elif [ "${Partition}" == "mbr" ]; then
-    rootbind=$(blkid -s UUID -o value ${device}${rootpartitionnummer})
-fi
+rootbind=$(blkid -s PARTUUID -o value ${device}${rootpartitionnummer})
 
 if [ "${verschluesselung}" == "y" ]; then
 
-    if [ "${Partition}" == "gpt" ]; then
 
-        echo -e "${deviceluks} / btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/ROOT 0 0" >> ${mountpoint}/etc/fstab
+    echo -e "${deviceluks} / btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/ROOT 0 0" >> ${mountpoint}/etc/fstab
 
-        echo -e "${deviceluks} /home btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/home 0 0" >> ${mountpoint}/etc/fstab
-        echo -e "${deviceluks} /opt btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/opt 0 0" >> ${mountpoint}/etc/fstab
-        echo -e "${deviceluks} /var/cache/pacman/pkg btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/var/cache/pacman/pkg 0 0" >> ${mountpoint}/etc/fstab
+    echo -e "${deviceluks} /home btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/home 0 0" >> ${mountpoint}/etc/fstab
+    echo -e "${deviceluks} /opt btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/opt 0 0" >> ${mountpoint}/etc/fstab
+    echo -e "${deviceluks} /var/cache/pacman/pkg btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/var/cache/pacman/pkg 0 0" >> ${mountpoint}/etc/fstab
 
-        # custom-mounts
-        for wort in ${mountsnaps}
-        do
-            echo -e "${deviceluks} ${wort} btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current${wort} 0 0" >> ${mountpoint}/etc/fstab
-        done
+    # custom-mounts
+    for wort in ${mountsnaps}
+    do
+        echo -e "${deviceluks} ${wort} btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current${wort} 0 0" >> ${mountpoint}/etc/fstab
+    done
 
-
-    elif [ "${Partition}" == "mbr" ]; then
-
-        echo -e "${deviceluks} / btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/ROOT 0 0" >> ${mountpoint}/etc/fstab
-
-        echo -e "${deviceluks} /home btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/home 0 0" >> ${mountpoint}/etc/fstab
-        echo -e "${deviceluks} /opt btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/opt 0 0" >> ${mountpoint}/etc/fstab
-        echo -e "${deviceluks} /var/cache/pacman/pkg btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/var/cache/pacman/pkg 0 0" >> ${mountpoint}/etc/fstab
-
-        # custom-mounts
-        for wort in ${mountsnaps}
-        do
-            echo -e "${deviceluks} ${wort} btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current${wort} 0 0" >> ${mountpoint}/etc/fstab
-        done
-    fi
 
 else
 
-    if [ "${Partition}" == "gpt" ]; then
+    echo -e "PARTUUID=${rootbind} / btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/ROOT 0 0" >> ${mountpoint}/etc/fstab
 
-        echo -e "PARTUUID=${rootbind} / btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/ROOT 0 0" >> ${mountpoint}/etc/fstab
+    echo -e "PARTUUID=${rootbind} /home btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/home 0 0" >> ${mountpoint}/etc/fstab
+    echo -e "PARTUUID=${rootbind} /opt btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/opt 0 0" >> ${mountpoint}/etc/fstab
+    echo -e "PARTUUID=${rootbind} /var/cache/pacman/pkg btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/var/cache/pacman/pkg 0 0" >> ${mountpoint}/etc/fstab
 
-        echo -e "PARTUUID=${rootbind} /home btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/home 0 0" >> ${mountpoint}/etc/fstab
-        echo -e "PARTUUID=${rootbind} /opt btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/opt 0 0" >> ${mountpoint}/etc/fstab
-        echo -e "PARTUUID=${rootbind} /var/cache/pacman/pkg btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/var/cache/pacman/pkg 0 0" >> ${mountpoint}/etc/fstab
+    # custom-mounts
+    for wort in ${mountsnaps}
+    do
+        echo -e "PARTUUID=${rootbind} ${wort} btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current${wort} 0 0" >> ${mountpoint}/etc/fstab
+    done
 
-        # custom-mounts
-        for wort in ${mountsnaps}
-        do
-            echo -e "PARTUUID=${rootbind} ${wort} btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current${wort} 0 0" >> ${mountpoint}/etc/fstab
-        done
-
-
-    elif [ "${Partition}" == "mbr" ]; then
-
-        echo -e "UUID=${rootbind} / btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/ROOT 0 0" >> ${mountpoint}/etc/fstab
-
-        echo -e "UUID=${rootbind} /home btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/home 0 0" >> ${mountpoint}/etc/fstab
-        echo -e "UUID=${rootbind} /opt btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/opt 0 0" >> ${mountpoint}/etc/fstab
-        echo -e "UUID=${rootbind} /var/cache/pacman/pkg btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/var/cache/pacman/pkg 0 0" >> ${mountpoint}/etc/fstab
-
-        # custom-mounts
-        for wort in ${mountsnaps}
-        do
-            echo -e "UUID=${rootbind} ${wort} btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current${wort} 0 0" >> ${mountpoint}/etc/fstab
-        done
-
-    fi
 
 fi
 }
@@ -526,9 +451,7 @@ if [ "${1}" == "2" ] || [ "${1}" == "" ]; then
     fi
     # boot mount
     mkdir -p ${mountpoint}/boot
-    if [ "${Partition}" == "gpt" ]; then
-        mount -t vfat ${device}${bootpartitionnummer} ${mountpoint}/boot
-    fi
+    mount -t vfat ${device}${efipartitionnummer} ${mountpoint}/boot
 
 fi
 }
@@ -589,7 +512,9 @@ parameter=""
 if [ "${swap}" == "y" ]; then
     parameter="${parameter}resume=PARTUUID=${swappartitionpart} "
 fi
-
+if [ "${verschluesselung}" == "y" ]; then
+    parameter="${parameter}cryptdevice=UUID=${tobootdevice}:luks0 "
+fi
 if [ "${dateisystem}" == "btrfs" ]; then
     parameter="${parameter}rootflags=subvol=__current/ROOT "
 fi
@@ -639,13 +564,13 @@ read -p "Wie heissen sie?: " name
 [[ -z "${name}" ]] && name=arch-linux
 
 # Partionierung
-# GPT oder MBR
+# UEFI oder Legacy-BIOS
 echo ""
-echo "GPT = GUID Partition Table 64 Bit UEFI"
+echo "UEFI = Unified Extensible Firmware Interface"
 echo "Empfohlen fuer Neuere PCs"
 echo "WICHTIG DAFUER MUESSEN SIE IM BOOTMENUE DEN UEFI USB_STICK AUSGEWAEHLT HABEN SONST KANN KEIN UEFI BOOTEINTRAG ERSTELLT WERDEN!!!"
 echo ""
-echo "MBR = Master Boot Record 32 Bit Legacy"
+echo "BIOS = basic input/output system"
 echo "Empfohlen fuer Alte PCs und portable USB-Sticks"
 echo ""
 echo "Bitte die Eingaben klein schreiben :D !!!"
@@ -653,15 +578,15 @@ echo "Für jedes ja must du ein y machen und für jedes nein ein n ok !!!"
 echo ""
 if mount | grep efi > /dev/null; then
     echo "System unterstützt UEFI"
-    read -p "Wie moechten sie ihre Festplatte partioniert haben: [GPT/mbr] " Partition
-    [[ -z "${Partition}" ]] && Partition=gpt
+    read -p "Wie moechten sie ihre Festplatte partioniert haben: [UEFI/bios] " Partition
+    [[ -z "${Partition}" ]] && Partition=uefi
 else
     echo "System unterstützt kein UEFI"
-    read -p "Wie moechten sie ihre Festplatte partioniert haben: [gpt/MBR] " Partition
-    [[ -z "${Partition}" ]] && Partition=mbr
+    read -p "Wie moechten sie ihre Festplatte partioniert haben: [uefi/BIOS] " Partition
+    [[ -z "${Partition}" ]] && Partition=bios
 fi
 
-if [ "${Partition}" == "gpt" ]
+if [ "${Partition}" == "uefi" ]
 then
     read -p "Soll mit systemd gebootet werden oder mit grub? [systemd/GRUB] : " boot
     if [ "${boot}" == "systemd" ]; then
@@ -786,7 +711,7 @@ fi
 # Partitionierung
 
 if [ "${dateisystem}" == "btrfs" ]; then
-    if [ "${Partition}" == "gpt" ]; then
+    if [ "${Partition}" == "uefi" ]; then
         bootpartitionnummer=1
         efipartitionnummer=2
         rootpartitionnummer=3
@@ -794,7 +719,7 @@ if [ "${dateisystem}" == "btrfs" ]; then
             swappartitionnummer=3
             rootpartitionnummer=4
         fi
-    elif [ "${Partition}" == "mbr" ]; then
+    elif [ "${Partition}" == "bios" ]; then
         bootpartitionnummer=1
         efipartitionnummer=2
         rootpartitionnummer=3
@@ -804,7 +729,7 @@ if [ "${dateisystem}" == "btrfs" ]; then
         fi
     fi
 elif [ "${dateisystem}" == "ext4" ]; then
-    if [ "${Partition}" == "gpt" ]; then
+    if [ "${Partition}" == "uefi" ]; then
         bootpartitionnummer=1
         efipartitionnummer=2
         rootpartitionnummer=3
@@ -812,7 +737,7 @@ elif [ "${dateisystem}" == "ext4" ]; then
             swappartitionnummer=3
             rootpartitionnummer=4
         fi
-    elif [ "${Partition}" == "mbr" ]; then
+    elif [ "${Partition}" == "bios" ]; then
         bootpartitionnummer=1
         efipartitionnummer=2
         rootpartitionnummer=3
@@ -870,6 +795,7 @@ else
         exit 0
     fi
 fi
+fi
 
 # debug = Installation überspringen zu arch-graphical-install und DEBEUG-MODUS
 abfrage
@@ -878,18 +804,16 @@ secureumount
 
 if [ "${name}" == "debug" ]
 then
-    echo "DEBEUG-MODUS"
-    echo "Wenn kein befehl mehr ausgefuehrt werden muss einfach eingabetaste druecken"
-    echo "Welcher befehl soll ausgefuert werden? "
+echo "DEBEUG-MODUS"
+echo "Wenn kein befehl mehr ausgefuehrt werden muss einfach eingabetaste druecken"
+echo "Welcher befehl soll ausgefuert werden? "
 
-    befehl=blablabla
-    while [ "$befehl" != "" ]
-    do
-        read -p "" befehl
-        $befehl
-    done
-
-fi
+befehl=blablabla
+while [ "$befehl" != "" ]
+do
+    read -p "" befehl
+    $befehl
+done
 
 fi
 
@@ -898,9 +822,9 @@ echo "Eine Säuberung erhört die chance der Installation auf dem System."
 echo "Es kann eine Zeit lang dauern!"
 dd if=/dev/zero of=${device} bs=64M count=10 status=progress
 #
-if [ "${Partition}" == "gpt" ]
+if [ "${Partition}" == "uefi" ]
 then
-echo "Partioniere in GPT"
+echo "Partioniere mit UEFI"
 
 if [ "${swap}" != "n" ]; then
     echo "Erstelle zustzliche swap-partition"
@@ -928,8 +852,8 @@ else
 fi
 removeinstaller
 echo "Fertig"
-elif [ "${Partition}" == "mbr" ]; then
-echo "Partioniere in MBR"
+elif [ "${Partition}" == "bios" ]; then
+echo "Partioniere mit bios"
 if [ "${swap}" != "n" ]; then
     echo "Erstelle zustzliche swap-partition"
     partionierenmitswap
