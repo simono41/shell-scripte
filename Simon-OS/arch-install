@@ -299,12 +299,17 @@ if [ "${Partition}" == "gpt" ]; then
 fi
 
 if [ "${swap}" != "n" ]; then
-    if [ "${Partition}" == "gpt" ]; then
-        swappartition=$(blkid -s PARTUUID -o value ${device}${swappartitionnummer})
-        echo "PARTUUID=${swappartition} none swap defaults 0 0" >> ${mountpoint}/etc/fstab
-    elif [ "${Partition}" == "mbr" ]; then
+    if [ "${verschluesselung}" == "y" ]; then
         swappartition=$(blkid -s UUID -o value ${device}${swappartitionnummer})
-        echo "UUID=${swappartition} none swap defaults 0 0" >> ${mountpoint}/etc/fstab
+        echo "swap UUID=${swappartition} /dev/urandom swap,cipher=aes-cbc-essiv:sha256,size=256" >> ${mountpoint}/etc/crypttab
+    else
+        if [ "${Partition}" == "gpt" ]; then
+            swappartition=$(blkid -s PARTUUID -o value ${device}${swappartitionnummer})
+            echo "PARTUUID=${swappartition} none swap defaults 0 0" >> ${mountpoint}/etc/fstab
+        elif [ "${Partition}" == "mbr" ]; then
+            swappartition=$(blkid -s UUID -o value ${device}${swappartitionnummer})
+            echo "UUID=${swappartition} none swap defaults 0 0" >> ${mountpoint}/etc/fstab
+        fi
     fi
 fi
 
