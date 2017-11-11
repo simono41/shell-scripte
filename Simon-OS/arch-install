@@ -418,10 +418,36 @@ function btrfsmount() {
 #[[ -z "${device}" ]] && device=${2}
 
 if [ "${1}" == "1" ] || [ "${1}" == "" ]; then
+if [ "${verschluesselung}" == "y" ]; then
+    mkdir -p /mnt/btrfs-root
+    mount -o defaults,noatime,nodiratime,space_cache,discard,ssd,compress=lzo ${deviceluks} /mnt/btrfs-root
+else
     mkdir -p /mnt/btrfs-root
     mount -o defaults,noatime,nodiratime,space_cache,discard,ssd,compress=lzo ${device}${rootpartitionnummer} /mnt/btrfs-root
 fi
+fi
 if [ "${1}" == "2" ] || [ "${1}" == "" ]; then
+if [ "${verschluesselung}" == "y" ]; then
+    mkdir -p ${mountpoint}
+    mount -o defaults,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/ROOT ${deviceluks} ${mountpoint}
+
+    mkdir -p ${mountpoint}/home
+    mkdir -p ${mountpoint}/opt
+    mkdir -p ${mountpoint}/var/cache/pacman/pkg
+    mount -o defaults,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/home ${deviceluks} ${mountpoint}/home
+    mount -o defaults,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/opt ${deviceluks} ${mountpoint}/opt
+    mount -o defaults,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/var/cache/pacman/pkg ${deviceluks} ${mountpoint}/var/cache/pacman/pkg
+
+    # custom-mounts
+    for wort in ${mountsnaps}
+    do
+        mkdir -p ${mountpoint}${wort}
+        mount -o defaults,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current${wort} ${deviceluks} ${mountpoint}${wort}
+    done
+
+    mkdir -p ${mountpoint}/var/lib
+    mount --bind /mnt/btrfs-root/__current/ROOT/var/lib ${mountpoint}/var/lib
+else
     mkdir -p ${mountpoint}
     mount -o defaults,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/ROOT ${device}${rootpartitionnummer} ${mountpoint}
 
@@ -441,7 +467,7 @@ if [ "${1}" == "2" ] || [ "${1}" == "" ]; then
 
     mkdir -p ${mountpoint}/var/lib
     mount --bind /mnt/btrfs-root/__current/ROOT/var/lib ${mountpoint}/var/lib
-
+fi
     # boot mount
     mkdir -p ${mountpoint}/boot
     if [ "${Partition}" == "gpt" ]; then
@@ -794,6 +820,21 @@ abfrage
 
 secureumount
 
+if [ "${name}" == "debug" ]
+then
+echo "DEBEUG-MODUS"
+echo "Wenn kein befehl mehr ausgefuehrt werden muss einfach eingabetaste druecken"
+echo "Welcher befehl soll ausgefuert werden? "
+
+befehl=blablabla
+while [ "$befehl" != "" ]
+do
+    read -p "" befehl
+    $befehl
+done
+
+fi
+
 fi
 
 #
@@ -856,21 +897,6 @@ echo "Eingabe Ungueltig"
 exit 1
 fi
 
-if [ "${name}" == "debug" ]
-then
-echo "DEBEUG-MODUS"
-echo "Wenn kein befehl mehr ausgefuehrt werden muss einfach eingabetaste druecken"
-echo "Welcher befehl soll ausgefuert werden? "
-
-befehl=blablabla
-while [ "$befehl" != "" ]
-do
-    read -p "" befehl
-    $befehl
-done
-
-fi
-
 if [ "${update}" != "n" ] && [ "spectre-os" != "$(cat /etc/hostname)" ]; then
 read -p "Soll die erweiterte Installation durchgeführt werden? [Y/n] " graphical
 if [ "$graphical" != "n" ]
@@ -879,11 +905,12 @@ then
 fi
 fi
 echo "df!!!"
-df -h ${mountpoint}
+df -h
 if [ "${dateisystem}" == "btrfs" ]; then
 btrfs filesystem df ${mountpoint}
 fi
 echo "umount!!!"
+pause 5
 secureumount
 echo ""
 echo "Fertig!!!"
