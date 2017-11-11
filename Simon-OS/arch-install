@@ -19,655 +19,681 @@ function minimalinstallation() {
 
 }
 
+function secureumount() {
+    if [ "${dateisystem}" == "btrfs" ]; then
+        if cat /proc/mounts | grep ${mountpoint} > /dev/null; then
+            if [ "${Partition}" == "gpt" ]; then
+                umount ${mountpoint}/boot
+            fi
+        btrfs fi df ${mountpoint}
+        echo "umount!!!"
+        umount ${mountpoint}/home
+        umount ${mountpoint}/opt
+        umount ${mountpoint}/var/cache/pacman/pkg
+        umount ${mountpoint}/var/lib
+        # custom-mounts
+        for wort in ${mountsnaps}
+        do
+            umount ${mountpoint}${wort}
+        done
+        umount /mnt/btrfs-root
+        #umount -R /mnt
+    fi
+elif [ "${dateisystem}" == "ext4" ]; then
+    if cat /proc/mounts | grep ${mountpoint} > /dev/null; then
+        if [ "${Partition}" == "gpt" ]; then
+            umount ${mountpoint}/boot
+        fi
+        umount ${mountpoint}
+    fi
+fi
+
+
+}
+
 function partionierenmitswap() {
-    wipefs -a -f ${device}
-    sgdisk -o ${device}
-    sgdisk -a 2048 -n 1::+1024K -c 1:"BIOS Boot Partition" -t 1:ef02 ${device}
-    sgdisk -a 2048 -n 2::+1G -c 2:"EFI Boot Partition" -t 2:ef00 ${device}
-    sgdisk -a 2048 -n 3::+8G -c 3:"Linux swap" -t 3:8200 ${device}
-    sgdisk -a 2048 -n 4:: -c 4:"Linux filesystem" -t 4:8300 ${device}
+wipefs -a -f ${device}
+sgdisk -o ${device}
+sgdisk -a 2048 -n 1::+1024K -c 1:"BIOS Boot Partition" -t 1:ef02 ${device}
+sgdisk -a 2048 -n 2::+1G -c 2:"EFI Boot Partition" -t 2:ef00 ${device}
+sgdisk -a 2048 -n 3::+8G -c 3:"Linux swap" -t 3:8200 ${device}
+sgdisk -a 2048 -n 4:: -c 4:"Linux filesystem" -t 4:8300 ${device}
 
 }
 
 function partionierenohneswap() {
-    wipefs -a -f ${device}
-    sgdisk -o ${device}
-    sgdisk -a 2048 -n 1::+1024K -c 1:"BIOS Boot Partition" -t 1:ef02 ${device}
-    sgdisk -a 2048 -n 2::+1G -c 2:"EFI Boot Partition" -t 2:ef00 ${device}
-    sgdisk -a 2048 -n 3:: -c 4:"Linux filesystem" -t 3:8300 ${device}
+wipefs -a -f ${device}
+sgdisk -o ${device}
+sgdisk -a 2048 -n 1::+1024K -c 1:"BIOS Boot Partition" -t 1:ef02 ${device}
+sgdisk -a 2048 -n 2::+1G -c 2:"EFI Boot Partition" -t 2:ef00 ${device}
+sgdisk -a 2048 -n 3:: -c 4:"Linux filesystem" -t 3:8300 ${device}
 
 }
 
 function usbsecret() {
 
-    /usr/bin/curl -v -C - -f https://raw.githubusercontent.com/simono41/Simon-OS/master/install/usbsecret > ${mountpoint}/usr/lib/initcpio/install/usbsecret
-    /usr/bin/curl -v -C - -f https://raw.githubusercontent.com/simono41/Simon-OS/master/hooks/usbsecret > ${mountpoint}/root/usbsecret
+/usr/bin/curl -v -C - -f https://raw.githubusercontent.com/simono41/Simon-OS/master/install/usbsecret > ${mountpoint}/usr/lib/initcpio/install/usbsecret
+/usr/bin/curl -v -C - -f https://raw.githubusercontent.com/simono41/Simon-OS/master/hooks/usbsecret > ${mountpoint}/root/usbsecret
 
-    # hooks
-    #cp install/usbsecret ${mountpoint}/usr/lib/initcpio/install/usbsecret
-    #cp hooks/usbsecret ${mountpoint}/usr/lib/initcpio/hooks/usbsecret
+# hooks
+#cp install/usbsecret ${mountpoint}/usr/lib/initcpio/install/usbsecret
+#cp hooks/usbsecret ${mountpoint}/usr/lib/initcpio/hooks/usbsecret
 
-    sed "s|%USB_UUID%|${usbsecretdeviceuuid}|g;" ${mountpoint}/root/usbsecret > ${mountpoint}/usr/lib/initcpio/hooks/usbsecret
+sed "s|%USB_UUID%|${usbsecretdeviceuuid}|g;" ${mountpoint}/root/usbsecret > ${mountpoint}/usr/lib/initcpio/hooks/usbsecret
 
 }
 
 function cron() {
-    echo "cron-job snapshot"
-    mkdir -p ${mountpoint}/var/spool/cron/
-    echo "0 18 * * * /usr/bin/snapshot make ROOT home opt var/cache/pacman/pkg ${mountsnaps}" > ${mountpoint}/var/spool/cron/root
-    if [ "${update}" != "n" ]; then
-        /usr/bin/curl -v -C - -f https://raw.githubusercontent.com/simono41/Simon-OS/master/snapshot.sh > ${mountpoint}/usr/bin/snapshot
-        chmod 755 ${mountpoint}/usr/bin/snapshot
-    fi
+echo "cron-job snapshot"
+mkdir -p ${mountpoint}/var/spool/cron/
+echo "0 18 * * * /usr/bin/snapshot make ROOT home opt var/cache/pacman/pkg ${mountsnaps}" > ${mountpoint}/var/spool/cron/root
+if [ "${update}" != "n" ]; then
+    /usr/bin/curl -v -C - -f https://raw.githubusercontent.com/simono41/Simon-OS/master/snapshot.sh > ${mountpoint}/usr/bin/snapshot
+    chmod 755 ${mountpoint}/usr/bin/snapshot
+fi
 }
 
 function makeswapfile() {
-    #swapfile
-    fallocate -l ${swapfilespeicher} ${mountpoint}/swapfile
-    chmod 600 ${mountpoint}/swapfile
-    mkswap ${mountpoint}/swapfile
-    echo "/swapfile none swap defaults 0 0" >> ${mountpoint}/etc/fstab
+#swapfile
+fallocate -l ${swapfilespeicher} ${mountpoint}/swapfile
+chmod 600 ${mountpoint}/swapfile
+mkswap ${mountpoint}/swapfile
+echo "/swapfile none swap defaults 0 0" >> ${mountpoint}/etc/fstab
 }
 
 function makebtrfsswapfile() {
 
-    /usr/bin/curl -v -C - -f https://raw.githubusercontent.com/simono41/Simon-OS/master/btrfs-swapon > ${mountpoint}/usr/bin/btrfs-swapon
-    /usr/bin/curl -v -C - -f https://raw.githubusercontent.com/simono41/Simon-OS/master/btrfs-swapoff > ${mountpoint}/usr/bin/btrfs-swapoff
-    /usr/bin/curl -v -C - -f https://raw.githubusercontent.com/simono41/Simon-OS/master/btrfs-swapon.service > ${mountpoint}/root/btrfs-swapon.service
+/usr/bin/curl -v -C - -f https://raw.githubusercontent.com/simono41/Simon-OS/master/btrfs-swapon > ${mountpoint}/usr/bin/btrfs-swapon
+/usr/bin/curl -v -C - -f https://raw.githubusercontent.com/simono41/Simon-OS/master/btrfs-swapoff > ${mountpoint}/usr/bin/btrfs-swapoff
+/usr/bin/curl -v -C - -f https://raw.githubusercontent.com/simono41/Simon-OS/master/btrfs-swapon.service > ${mountpoint}/root/btrfs-swapon.service
 
-    chmod +x ${mountpoint}/usr/bin/btrfs-swapon
-    chmod +x ${mountpoint}/usr/bin/btrfs-swapoff
+chmod +x ${mountpoint}/usr/bin/btrfs-swapon
+chmod +x ${mountpoint}/usr/bin/btrfs-swapoff
 
-    sed "s|%swapfilespeicher%|${swapfilespeicher}|g;" ${mountpoint}/root/btrfs-swapon.service > ${mountpoint}/etc/systemd/system/btrfs-swapon.service
+sed "s|%swapfilespeicher%|${swapfilespeicher}|g;" ${mountpoint}/root/btrfs-swapon.service > ${mountpoint}/etc/systemd/system/btrfs-swapon.service
 
-    arch-chroot ${mountpoint} systemctl enable btrfs-swapon
+arch-chroot ${mountpoint} systemctl enable btrfs-swapon
 
 }
 
 function removeinstaller {
-    echo ""
-    if [ -f ${mountpoint}/usr/share/applications/arch-install.desktop ]
-    then
-        rm ${mountpoint}/usr/share/applications/arch-install.desktop
-    fi
-    echo ""
-    if [ -f ${mountpoint}/root/Schreibtisch/arch-install.desktop ]
-    then
-        rm ${mountpoint}/root/Schreibtisch/arch-install.desktop
-    fi
-    echo ""
-    if [ -f ${mountpoint}/home/user/Schreibtisch/arch-install.desktop ]
-    then
-        rm ${mountpoint}/home/user/Schreibtisch/arch-install.desktop
-    fi
-    echo ""
-    if [ -f ${mountpoint}/root/Desktop/arch-install.desktop ]
-    then
-        rm ${mountpoint}/root/Desktop/arch-install.desktop
-    fi
-    echo ""
-    if [ -f ${mountpoint}/home/user/Desktop/arch-install.desktop ]
-    then
-        rm ${mountpoint}/home/user/Desktop/arch-install.desktop
-    fi
-    echo ""
+echo ""
+if [ -f ${mountpoint}/usr/share/applications/arch-install.desktop ]
+then
+    rm ${mountpoint}/usr/share/applications/arch-install.desktop
+fi
+echo ""
+if [ -f ${mountpoint}/root/Schreibtisch/arch-install.desktop ]
+then
+    rm ${mountpoint}/root/Schreibtisch/arch-install.desktop
+fi
+echo ""
+if [ -f ${mountpoint}/home/user/Schreibtisch/arch-install.desktop ]
+then
+    rm ${mountpoint}/home/user/Schreibtisch/arch-install.desktop
+fi
+echo ""
+if [ -f ${mountpoint}/root/Desktop/arch-install.desktop ]
+then
+    rm ${mountpoint}/root/Desktop/arch-install.desktop
+fi
+echo ""
+if [ -f ${mountpoint}/home/user/Desktop/arch-install.desktop ]
+then
+    rm ${mountpoint}/home/user/Desktop/arch-install.desktop
+fi
+echo ""
 }
 
 function installation {
 
-    #boot
-    #root
-    #swap
+#boot
+#root
+#swap
 
-    #boot
-    echo "formatieren"
-    if [ "${Partition}" == "gpt" ]; then
-        mkfs.vfat -F 32 ${device}${bootpartitionnummer}
-    fi
+#boot
+echo "formatieren"
+if [ "${Partition}" == "gpt" ]; then
+    mkfs.vfat -F 32 ${device}${bootpartitionnummer}
+fi
 
-    #root
-    if [ "${dateisystem}" == "btrfs" ]; then
-        #mkfs.btrfs -f -L p_arch ${device}2
-        btrfsformat #btrfs
-        subvolume #btrfs
+#root
+if [ "${dateisystem}" == "btrfs" ]; then
+    #mkfs.btrfs -f -L p_arch ${device}2
+    btrfsformat #btrfs
+    subvolume #btrfs
 
-    elif [ "${dateisystem}" == "ext4" ]; then
-        echo "mit j bestätigen"
-        mkfs.ext4 -L p_arch ${device}${rootpartitionnummer} #ext4
-        mount ${device}${rootpartitionnummer} ${mountpoint}
+elif [ "${dateisystem}" == "ext4" ]; then
+    echo "mit j bestätigen"
+    mkfs.ext4 -L p_arch ${device}${rootpartitionnummer} #ext4
+    mount ${device}${rootpartitionnummer} ${mountpoint}
 
-    fi
+fi
 
-    #swap
-    if [ "${swap}" != "n" ]; then
-        mkswap -L p_swap ${device}${swappartitionnummer}
-    fi
+#swap
+if [ "${swap}" != "n" ]; then
+    mkswap -L p_swap ${device}${swappartitionnummer}
+fi
 
-    #installation
-    if [ "${offline}" != "n" ]
+#installation
+if [ "${offline}" != "n" ]
+then
+    if [ -f /run/archiso/bootmnt/arch/$(uname -m)/airootfs.sfs ]
     then
-        if [ -f /run/archiso/bootmnt/arch/$(uname -m)/airootfs.sfs ]
-        then
-            echo "Es ist kein copytoram System."
-            unsquashfs -f -d ${mountpoint} /run/archiso/bootmnt/arch/$(uname -m)/airootfs.sfs
-        else
-            echo "Es ist ein copytoram System."
-            unsquashfs -f -d ${mountpoint} /run/archiso/copytoram/airootfs.sfs
-        fi
+        echo "Es ist kein copytoram System."
+        unsquashfs -f -d ${mountpoint} /run/archiso/bootmnt/arch/$(uname -m)/airootfs.sfs
     else
-        minimalinstallation
+        echo "Es ist ein copytoram System."
+        unsquashfs -f -d ${mountpoint} /run/archiso/copytoram/airootfs.sfs
     fi
+else
+    minimalinstallation
+fi
 
-    #kernel
-    parameter="base udev "
-    if [ "${swap}" != "n" ]; then
-        parameter="${parameter}resume "
-    fi
-    parameter="${parameter}block filesystems keyboard "
-    if [ "${dateisystem}" == "btrfs" ]; then
-        parameter="${parameter}btrfs "
-    fi
-    if [ "${usbsecret}" == "y" ]; then
-        parameter="${parameter}usbsecret "
-    fi
+#kernel
+parameter="base udev "
+if [ "${swap}" != "n" ]; then
+    parameter="${parameter}resume "
+fi
+parameter="${parameter}block filesystems keyboard "
+if [ "${dateisystem}" == "btrfs" ]; then
+    parameter="${parameter}btrfs "
+fi
+if [ "${usbsecret}" == "y" ]; then
+    parameter="${parameter}usbsecret "
+fi
 
-    echo ""
-    echo "MODULES=\"i915 radeon\"" > ${mountpoint}/etc/mkinitcpio.conf
-    echo "HOOKS=\"${parameter}\"" >> ${mountpoint}/etc/mkinitcpio.conf
-    echo "COMPRESSION=\"lz4\"" >> ${mountpoint}/etc/mkinitcpio.conf
-    echo "FILES=\"/etc/modprobe.d/blacklist-floppy.conf\"" >> ${mountpoint}/etc/mkinitcpio.conf
-    echo ""
-    echo "blacklist floppy" > ${mountpoint}/etc/modprobe.d/blacklist-floppy.conf
-    echo ""
-    #cp /etc/X11/xinit/xinitrc ${mountpoint}/etc/X11/xinit/xinitrc
-    echo "exec startxfce4" > ${mountpoint}/etc/X11/xinit/xinitrc
-    #
-    echo ""
-    echo "tmpfs /tmp tmpfs defaults 0 0" >> ${mountpoint}/etc/fstab
-    echo "tmpfs /dev/shm tmpfs defaults 0 0" >> ${mountpoint}/etc/fstab
+echo ""
+echo "MODULES=\"i915 radeon\"" > ${mountpoint}/etc/mkinitcpio.conf
+echo "HOOKS=\"${parameter}\"" >> ${mountpoint}/etc/mkinitcpio.conf
+echo "COMPRESSION=\"lz4\"" >> ${mountpoint}/etc/mkinitcpio.conf
+echo "FILES=\"/etc/modprobe.d/blacklist-floppy.conf\"" >> ${mountpoint}/etc/mkinitcpio.conf
+echo ""
+echo "blacklist floppy" > ${mountpoint}/etc/modprobe.d/blacklist-floppy.conf
+echo ""
+#cp /etc/X11/xinit/xinitrc ${mountpoint}/etc/X11/xinit/xinitrc
+echo "exec startxfce4" > ${mountpoint}/etc/X11/xinit/xinitrc
+#
+echo ""
+echo "tmpfs /tmp tmpfs defaults 0 0" >> ${mountpoint}/etc/fstab
+echo "tmpfs /dev/shm tmpfs defaults 0 0" >> ${mountpoint}/etc/fstab
 
-    #fstab
+#fstab
+if [ "${Partition}" == "gpt" ]; then
+    rootbind=$(blkid -s PARTUUID -o value ${device}${rootpartitionnummer})
+elif [ "${Partition}" == "mbr" ]; then
+    rootbind=$(blkid -s UUID -o value ${device}${rootpartitionnummer})
+fi
+
+#genfstab -Up ${mountpoint} >> ${mountpoint}/etc/fstab
+
+if [ "${dateisystem}" == "btrfs" ]; then
+    btrfsfstab #btrfs
+
+    mkdir -p ${mountpoint}/run/btrfs-root
     if [ "${Partition}" == "gpt" ]; then
-        rootbind=$(blkid -s PARTUUID -o value ${device}${rootpartitionnummer})
+        echo "PARTUUID=${rootbind} /run/btrfs-root/ btrfs defaults 0 0" >> ${mountpoint}/etc/fstab #btrfs
     elif [ "${Partition}" == "mbr" ]; then
-        rootbind=$(blkid -s UUID -o value ${device}${rootpartitionnummer})
+        echo "UUID=${rootbind} /run/btrfs-root/ btrfs defaults 0 0" >> ${mountpoint}/etc/fstab #btrfs
     fi
 
-    #genfstab -Up ${mountpoint} >> ${mountpoint}/etc/fstab
+    #grep -v "/var/lib" < ${mountpoint}/etc/fstab > fstab.neu; mv fstab.neu ${mountpoint}/etc/fstab
 
-    if [ "${dateisystem}" == "btrfs" ]; then
-        btrfsfstab #btrfs
+    echo "/run/btrfs-root/__current/ROOT/var/lib /var/lib none bind 0 0" >> ${mountpoint}/etc/fstab #btrfs
 
-        mkdir -p ${mountpoint}/run/btrfs-root
-        if [ "${Partition}" == "gpt" ]; then
-            echo "PARTUUID=${rootbind} /run/btrfs-root/ btrfs defaults 0 0" >> ${mountpoint}/etc/fstab #btrfs
-        elif [ "${Partition}" == "mbr" ]; then
-            echo "UUID=${rootbind} /run/btrfs-root/ btrfs defaults 0 0" >> ${mountpoint}/etc/fstab #btrfs
-        fi
+    cron
 
-        #grep -v "/var/lib" < ${mountpoint}/etc/fstab > fstab.neu; mv fstab.neu ${mountpoint}/etc/fstab
-
-        echo "/run/btrfs-root/__current/ROOT/var/lib /var/lib none bind 0 0" >> ${mountpoint}/etc/fstab #btrfs
-
-        cron
-
-    elif [ "${dateisystem}" == "ext4" ]; then
-        if [ "${Partition}" == "gpt" ]; then
-            echo "PARTUUID=${rootbind} / ext4 rw,defaults,noatime,nodiratime,discard 0 0" >> ${mountpoint}/etc/fstab
-        elif [ "${Partition}" == "mbr" ]; then
-            echo "UUID=${rootbind} / ext4 rw,defaults,noatime,nodiratime,discard 0 0" >> ${mountpoint}/etc/fstab
-        fi
-    fi
-
+elif [ "${dateisystem}" == "ext4" ]; then
     if [ "${Partition}" == "gpt" ]; then
-
-        bootbind=$(blkid -s PARTUUID -o value ${device}${bootpartitionnummer})
-
-        echo -e "PARTUUID=${bootbind} /boot vfat rw,relatime 0 2" >> ${mountpoint}/etc/fstab
-
+        echo "PARTUUID=${rootbind} / ext4 rw,defaults,noatime,nodiratime,discard 0 0" >> ${mountpoint}/etc/fstab
+    elif [ "${Partition}" == "mbr" ]; then
+        echo "UUID=${rootbind} / ext4 rw,defaults,noatime,nodiratime,discard 0 0" >> ${mountpoint}/etc/fstab
     fi
+fi
 
-    if [ "${swap}" != "n" ]; then
-        if [ "${Partition}" == "gpt" ]; then
-            swappartition=$(blkid -s PARTUUID -o value ${device}${swappartitionnummer})
-            echo "PARTUUID=${swappartition} none swap defaults 0 0" >> ${mountpoint}/etc/fstab
-        elif [ "${Partition}" == "mbr" ]; then
-            swappartition=$(blkid -s UUID -o value ${device}${swappartitionnummer})
-            echo "UUID=${swappartition} none swap defaults 0 0" >> ${mountpoint}/etc/fstab
-        fi
+if [ "${Partition}" == "gpt" ]; then
+
+    bootbind=$(blkid -s PARTUUID -o value ${device}${bootpartitionnummer})
+
+    echo -e "PARTUUID=${bootbind} /boot vfat rw,relatime 0 2" >> ${mountpoint}/etc/fstab
+
+fi
+
+if [ "${swap}" != "n" ]; then
+    if [ "${Partition}" == "gpt" ]; then
+        swappartition=$(blkid -s PARTUUID -o value ${device}${swappartitionnummer})
+        echo "PARTUUID=${swappartition} none swap defaults 0 0" >> ${mountpoint}/etc/fstab
+    elif [ "${Partition}" == "mbr" ]; then
+        swappartition=$(blkid -s UUID -o value ${device}${swappartitionnummer})
+        echo "UUID=${swappartition} none swap defaults 0 0" >> ${mountpoint}/etc/fstab
     fi
+fi
 
-    #makeswapfile+fstab
-    if [ "${swapfile}" == "y" ]; then
-        if [ "${dateisystem}" == "btrfs" ]; then
-            makebtrfsswapfile
-        elif [ "${dateisystem}" == "ext4" ]; then
-            makeswapfile
-        fi
+#makeswapfile+fstab
+if [ "${swapfile}" == "y" ]; then
+    if [ "${dateisystem}" == "btrfs" ]; then
+        makebtrfsswapfile
+    elif [ "${dateisystem}" == "ext4" ]; then
+        makeswapfile
     fi
+fi
 
-    #hostname
-    echo "${name}"s-OS > ${mountpoint}/etc/hostname
+#hostname
+echo "${name}"s-OS > ${mountpoint}/etc/hostname
 
-    #openvpn
-    if [ "${openvpn}" != "n" ]; then
-        arch-chroot ${mountpoint} systemctl enable openvpn-client@client.service
-    else
-        arch-chroot ${mountpoint} systemctl disable openvpn-client@client.service
-    fi
+#openvpn
+if [ "${openvpn}" != "n" ]; then
+    arch-chroot ${mountpoint} systemctl enable openvpn-client@client.service
+else
+    arch-chroot ${mountpoint} systemctl disable openvpn-client@client.service
+fi
 
-    if [ "${usbsecret}" == "y" ]; then
-        usbsecret
-    fi
+if [ "${usbsecret}" == "y" ]; then
+    usbsecret
+fi
 
-    #sie könne hier ihre scripte die bei der installation ausgeführt werden sollen hinzufügen :D
+#sie könne hier ihre scripte die bei der installation ausgeführt werden sollen hinzufügen :D
 }
 
 function btrfsformat() {
-    if [ "$raid" == "raid0" ]; then
-        mkfs.btrfs -f -m raid0 -d raid0 ${device}${rootpartitionnummer} ${device1}
-    elif [ "$raid" == "raid1" ]; then
-        mkfs.btrfs -f -m raid1 -d raid1 ${device}${rootpartitionnummer} ${device1}
-    elif [ "$raid" == "raid10" ]; then
-        mkfs.btrfs -f -m raid10 -d raid10 ${device}${rootpartitionnummer} ${device1}
-    else
-        mkfs.btrfs -f -m single ${device}${rootpartitionnummer}
-    fi
-    btrfs filesystem show
+if [ "$raid" == "raid0" ]; then
+    mkfs.btrfs -f -m raid0 -d raid0 ${device}${rootpartitionnummer} ${device1}
+elif [ "$raid" == "raid1" ]; then
+    mkfs.btrfs -f -m raid1 -d raid1 ${device}${rootpartitionnummer} ${device1}
+elif [ "$raid" == "raid10" ]; then
+    mkfs.btrfs -f -m raid10 -d raid10 ${device}${rootpartitionnummer} ${device1}
+else
+    mkfs.btrfs -f -m single ${device}${rootpartitionnummer}
+fi
+btrfs filesystem show
 
 }
 
 function btrfsfstab() {
 
-    if [ "${Partition}" == "gpt" ]; then
-        rootbind=$(blkid -s PARTUUID -o value ${device}${rootpartitionnummer})
-    elif [ "${Partition}" == "mbr" ]; then
-        rootbind=$(blkid -s UUID -o value ${device}${rootpartitionnummer})
-    fi
+if [ "${Partition}" == "gpt" ]; then
+    rootbind=$(blkid -s PARTUUID -o value ${device}${rootpartitionnummer})
+elif [ "${Partition}" == "mbr" ]; then
+    rootbind=$(blkid -s UUID -o value ${device}${rootpartitionnummer})
+fi
 
-    if [ "${Partition}" == "gpt" ]; then
+if [ "${Partition}" == "gpt" ]; then
 
-        echo -e "PARTUUID=${rootbind} / btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/ROOT 0 0" >> ${mountpoint}/etc/fstab
+    echo -e "PARTUUID=${rootbind} / btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/ROOT 0 0" >> ${mountpoint}/etc/fstab
 
-        echo -e "PARTUUID=${rootbind} /home btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/home 0 0" >> ${mountpoint}/etc/fstab
-        echo -e "PARTUUID=${rootbind} /opt btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/opt 0 0" >> ${mountpoint}/etc/fstab
-        echo -e "PARTUUID=${rootbind} /var/cache/pacman/pkg btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/var/cache/pacman/pkg 0 0" >> ${mountpoint}/etc/fstab
-
-        # custom-mounts
-        for wort in ${mountsnaps}
-        do
-            echo -e "PARTUUID=${rootbind} ${wort} btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current${wort} 0 0" >> ${mountpoint}/etc/fstab
-        done
-
-
-    elif [ "${Partition}" == "mbr" ]; then
-
-        echo -e "UUID=${rootbind} / btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/ROOT 0 0" >> ${mountpoint}/etc/fstab
-
-        echo -e "UUID=${rootbind} /home btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/home 0 0" >> ${mountpoint}/etc/fstab
-        echo -e "UUID=${rootbind} /opt btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/opt 0 0" >> ${mountpoint}/etc/fstab
-        echo -e "UUID=${rootbind} /var/cache/pacman/pkg btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/var/cache/pacman/pkg 0 0" >> ${mountpoint}/etc/fstab
-
-        # custom-mounts
-        for wort in ${mountsnaps}
-        do
-            echo -e "UUID=${rootbind} ${wort} btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current${wort} 0 0" >> ${mountpoint}/etc/fstab
-        done
-
-    fi
-
-}
-
-function btrfsmount() {
-    #[[ -z "${device}" ]] && device=${2}
-
-    if [ "${1}" == "1" ] || [ "${1}" == "" ]; then
-        mkdir -p /mnt/btrfs-root
-        mount -o defaults,noatime,nodiratime,space_cache,discard,ssd,compress=lzo ${device}${rootpartitionnummer} /mnt/btrfs-root
-    fi
-    if [ "${1}" == "2" ] || [ "${1}" == "" ]; then
-        mkdir -p ${mountpoint}
-        mount -o defaults,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/ROOT ${device}${rootpartitionnummer} ${mountpoint}
-
-        mkdir -p ${mountpoint}/home
-        mkdir -p ${mountpoint}/opt
-        mkdir -p ${mountpoint}/var/cache/pacman/pkg
-        mount -o defaults,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/home ${device}${rootpartitionnummer} ${mountpoint}/home
-        mount -o defaults,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/opt ${device}${rootpartitionnummer} ${mountpoint}/opt
-        mount -o defaults,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/var/cache/pacman/pkg ${device}${rootpartitionnummer} ${mountpoint}/var/cache/pacman/pkg
-
-        # custom-mounts
-        for wort in ${mountsnaps}
-        do
-            mkdir -p ${mountpoint}${wort}
-            mount -o defaults,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current${wort} ${device}${rootpartitionnummer} ${mountpoint}${wort}
-        done
-
-        mkdir -p ${mountpoint}/var/lib
-        mount --bind /mnt/btrfs-root/__current/ROOT/var/lib ${mountpoint}/var/lib
-
-        # boot mount
-        mkdir -p ${mountpoint}/boot
-        if [ "${Partition}" == "gpt" ]; then
-            mount -t vfat ${device}${bootpartitionnummer} ${mountpoint}/boot
-        fi
-
-    fi
-}
-
-function subvolume() {
-
-    # Mount
-    btrfsmount 1
-
-    # Create
-    mkdir -p /mnt/btrfs-root/__snapshot
-    mkdir -p /mnt/btrfs-root/__current
-    btrfs subvolume create /mnt/btrfs-root/__current/ROOT
-    btrfs subvolume create /mnt/btrfs-root/__current/home
-    btrfs subvolume create /mnt/btrfs-root/__current/opt
-    mkdir -p /mnt/btrfs-root/__current/var/cache/pacman
-    btrfs subvolume create /mnt/btrfs-root/__current/var/cache/pacman/pkg/
+    echo -e "PARTUUID=${rootbind} /home btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/home 0 0" >> ${mountpoint}/etc/fstab
+    echo -e "PARTUUID=${rootbind} /opt btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/opt 0 0" >> ${mountpoint}/etc/fstab
+    echo -e "PARTUUID=${rootbind} /var/cache/pacman/pkg btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/var/cache/pacman/pkg 0 0" >> ${mountpoint}/etc/fstab
 
     # custom-mounts
     for wort in ${mountsnaps}
     do
-        mkdir -p /mnt/btrfs-root/__current${wort%/*}
-        btrfs subvolume create /mnt/btrfs-root/__current${wort}
+        echo -e "PARTUUID=${rootbind} ${wort} btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current${wort} 0 0" >> ${mountpoint}/etc/fstab
     done
 
-    btrfs subvolume list -p /mnt/btrfs-root
 
-    # Mount
-    btrfsmount 2
+elif [ "${Partition}" == "mbr" ]; then
+
+    echo -e "UUID=${rootbind} / btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/ROOT 0 0" >> ${mountpoint}/etc/fstab
+
+    echo -e "UUID=${rootbind} /home btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/home 0 0" >> ${mountpoint}/etc/fstab
+    echo -e "UUID=${rootbind} /opt btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/opt 0 0" >> ${mountpoint}/etc/fstab
+    echo -e "UUID=${rootbind} /var/cache/pacman/pkg btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/var/cache/pacman/pkg 0 0" >> ${mountpoint}/etc/fstab
+
+    # custom-mounts
+    for wort in ${mountsnaps}
+    do
+        echo -e "UUID=${rootbind} ${wort} btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current${wort} 0 0" >> ${mountpoint}/etc/fstab
+    done
+
+fi
+
+}
+
+function btrfsmount() {
+#[[ -z "${device}" ]] && device=${2}
+
+if [ "${1}" == "1" ] || [ "${1}" == "" ]; then
+    mkdir -p /mnt/btrfs-root
+    mount -o defaults,noatime,nodiratime,space_cache,discard,ssd,compress=lzo ${device}${rootpartitionnummer} /mnt/btrfs-root
+fi
+if [ "${1}" == "2" ] || [ "${1}" == "" ]; then
+    mkdir -p ${mountpoint}
+    mount -o defaults,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/ROOT ${device}${rootpartitionnummer} ${mountpoint}
+
+    mkdir -p ${mountpoint}/home
+    mkdir -p ${mountpoint}/opt
+    mkdir -p ${mountpoint}/var/cache/pacman/pkg
+    mount -o defaults,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/home ${device}${rootpartitionnummer} ${mountpoint}/home
+    mount -o defaults,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/opt ${device}${rootpartitionnummer} ${mountpoint}/opt
+    mount -o defaults,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/var/cache/pacman/pkg ${device}${rootpartitionnummer} ${mountpoint}/var/cache/pacman/pkg
+
+    # custom-mounts
+    for wort in ${mountsnaps}
+    do
+        mkdir -p ${mountpoint}${wort}
+        mount -o defaults,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current${wort} ${device}${rootpartitionnummer} ${mountpoint}${wort}
+    done
+
+    mkdir -p ${mountpoint}/var/lib
+    mount --bind /mnt/btrfs-root/__current/ROOT/var/lib ${mountpoint}/var/lib
+
+    # boot mount
+    mkdir -p ${mountpoint}/boot
+    if [ "${Partition}" == "gpt" ]; then
+        mount -t vfat ${device}${bootpartitionnummer} ${mountpoint}/boot
+    fi
+
+fi
+}
+
+function subvolume() {
+
+# Mount
+btrfsmount 1
+
+# Create
+mkdir -p /mnt/btrfs-root/__snapshot
+mkdir -p /mnt/btrfs-root/__current
+btrfs subvolume create /mnt/btrfs-root/__current/ROOT
+btrfs subvolume create /mnt/btrfs-root/__current/home
+btrfs subvolume create /mnt/btrfs-root/__current/opt
+mkdir -p /mnt/btrfs-root/__current/var/cache/pacman
+btrfs subvolume create /mnt/btrfs-root/__current/var/cache/pacman/pkg/
+
+# custom-mounts
+for wort in ${mountsnaps}
+do
+    mkdir -p /mnt/btrfs-root/__current${wort%/*}
+    btrfs subvolume create /mnt/btrfs-root/__current${wort}
+done
+
+btrfs subvolume list -p /mnt/btrfs-root
+
+# Mount
+btrfsmount 2
 
 }
 
 function update() {
-    #statements
-    local if="${1}"
-    local of="${2}"
-    local parameters="${3}"
-    local before="${4}"
-    if [ -f "${of}" ]
-    then
-        rm ${of}
-    else
-        echo "${of} nicht vorhanden!"
-    fi
-    /usr/bin/curl -v -C - -f ${if} > ${of}
-    chmod 755 ${of}
-    [[ -n "${5}" ]] && of=${5}
-    ${before} ${of} ${parameters}
+#statements
+local if="${1}"
+local of="${2}"
+local parameters="${3}"
+local before="${4}"
+if [ -f "${of}" ]
+then
+    rm ${of}
+else
+    echo "${of} nicht vorhanden!"
+fi
+/usr/bin/curl -v -C - -f ${if} > ${of}
+chmod 755 ${of}
+[[ -n "${5}" ]] && of=${5}
+${before} ${of} ${parameters}
 }
 
 function systemdboot() {
-    tobootdevice=$(blkid -s PARTUUID -o value ${device}${rootpartitionnummer})
-    swappartitionpart=$(blkid -s PARTUUID -o value ${device}${swappartitionnummer})
+tobootdevice=$(blkid -s PARTUUID -o value ${device}${rootpartitionnummer})
+swappartitionpart=$(blkid -s PARTUUID -o value ${device}${swappartitionnummer})
 
-    # zurücksetzen der parameter
-    parameter=""
+# zurücksetzen der parameter
+parameter=""
 
-    if [ "${swap}" == "y" ]; then
-        parameter="${parameter}resume=PARTUUID=${swappartitionpart} "
-    fi
+if [ "${swap}" == "y" ]; then
+    parameter="${parameter}resume=PARTUUID=${swappartitionpart} "
+fi
 
-    if [ "${dateisystem}" == "btrfs" ]; then
-        parameter="${parameter}rootflags=subvol=__current/ROOT "
-    fi
+if [ "${dateisystem}" == "btrfs" ]; then
+    parameter="${parameter}rootflags=subvol=__current/ROOT "
+fi
 
-    #rootsub=$(btrfs subvolume list /mnt | awk 'NR<0 && NR>2 {print $2}')
+#rootsub=$(btrfs subvolume list /mnt | awk 'NR<0 && NR>2 {print $2}')
 
-    mkdir -p ${mountpoint}/boot/EFI/systemd/
-    mkdir -p ${mountpoint}/boot/EFI/BOOT/
-    cp ${mountpoint}/usr/lib/systemd/boot/efi/systemd-bootx64.efi ${mountpoint}/boot/EFI/systemd/systemd-bootx64.efi
-    cp ${mountpoint}/usr/lib/systemd/boot/efi/systemd-bootx64.efi ${mountpoint}/boot/EFI/BOOT/BOOTX64.EFI
+mkdir -p ${mountpoint}/boot/EFI/systemd/
+mkdir -p ${mountpoint}/boot/EFI/BOOT/
+cp ${mountpoint}/usr/lib/systemd/boot/efi/systemd-bootx64.efi ${mountpoint}/boot/EFI/systemd/systemd-bootx64.efi
+cp ${mountpoint}/usr/lib/systemd/boot/efi/systemd-bootx64.efi ${mountpoint}/boot/EFI/BOOT/BOOTX64.EFI
 
-    mkdir -p ${mountpoint}/boot/loader/entries/
-    echo "title    "${name}"s-os" > ${mountpoint}/boot/loader/entries/arch-uefi.conf
-    echo "linux    /vmlinuz-linux" >> ${mountpoint}/boot/loader/entries/arch-uefi.conf
-    echo "initrd   /intel-ucode.img" >> ${mountpoint}/boot/loader/entries/arch-uefi.conf
-    echo "initrd   /initramfs-linux.img" >> ${mountpoint}/boot/loader/entries/arch-uefi.conf
-    echo "options  root=PARTUUID=${tobootdevice} rw ${parameter}" >> ${mountpoint}/boot/loader/entries/arch-uefi.conf
+mkdir -p ${mountpoint}/boot/loader/entries/
+echo "title    "${name}"s-os" > ${mountpoint}/boot/loader/entries/arch-uefi.conf
+echo "linux    /vmlinuz-linux" >> ${mountpoint}/boot/loader/entries/arch-uefi.conf
+echo "initrd   /intel-ucode.img" >> ${mountpoint}/boot/loader/entries/arch-uefi.conf
+echo "initrd   /initramfs-linux.img" >> ${mountpoint}/boot/loader/entries/arch-uefi.conf
+echo "options  root=PARTUUID=${tobootdevice} rw ${parameter}" >> ${mountpoint}/boot/loader/entries/arch-uefi.conf
 
-    echo "title    "${name}"s-os" > ${mountpoint}/boot/loader/entries/arch-uefi-fallback.conf
-    echo "linux    /vmlinuz-linux" >> ${mountpoint}/boot/loader/entries/arch-uefi-fallback.conf
-    echo "initrd   /intel-ucode.img" >> ${mountpoint}/boot/loader/entries/arch-uefi-fallback.conf
-    echo "initrd   /initramfs-linux-fallback.img" >> ${mountpoint}/boot/loader/entries/arch-uefi-fallback.conf
-    echo "options  root=PARTUUID=${tobootdevice} rw ${parameter}" >> ${mountpoint}/boot/loader/entries/arch-uefi-fallback.conf
+echo "title    "${name}"s-os" > ${mountpoint}/boot/loader/entries/arch-uefi-fallback.conf
+echo "linux    /vmlinuz-linux" >> ${mountpoint}/boot/loader/entries/arch-uefi-fallback.conf
+echo "initrd   /intel-ucode.img" >> ${mountpoint}/boot/loader/entries/arch-uefi-fallback.conf
+echo "initrd   /initramfs-linux-fallback.img" >> ${mountpoint}/boot/loader/entries/arch-uefi-fallback.conf
+echo "options  root=PARTUUID=${tobootdevice} rw ${parameter}" >> ${mountpoint}/boot/loader/entries/arch-uefi-fallback.conf
 
-    echo "default   arch-uefi" > ${mountpoint}/boot/loader/loader.conf
-    echo "timeout   1" >> ${mountpoint}/boot/loader/loader.conf
+echo "default   arch-uefi" > ${mountpoint}/boot/loader/loader.conf
+echo "timeout   1" >> ${mountpoint}/boot/loader/loader.conf
 
-    if [ "${booteintraege}" != "n" ]; then
+if [ "${booteintraege}" != "n" ]; then
 
-        echo "Zusätzliche Booteinträge werden erstellt!!!"
+    echo "Zusätzliche Booteinträge werden erstellt!!!"
 
-        arch-chroot ${mountpoint} efibootmgr -c -d ${device} -p 1 -l /EFI/systemd/systemd-bootx64.efi -L "Linux Boot Manager"
+    arch-chroot ${mountpoint} efibootmgr -c -d ${device} -p 1 -l /EFI/systemd/systemd-bootx64.efi -L "Linux Boot Manager"
 
-        arch-chroot ${mountpoint} efibootmgr -c -d ${device} -p 1 -l \vmlinuz-linux -L "Arch Linux efistub" -u "initrd=/initramfs-linux.img root=PARTUUID=${tobootdevice} rw ${parameter}"
+    arch-chroot ${mountpoint} efibootmgr -c -d ${device} -p 1 -l \vmlinuz-linux -L "Arch Linux efistub" -u "initrd=/initramfs-linux.img root=PARTUUID=${tobootdevice} rw ${parameter}"
 
-        # überschreibt die efistub deswegen entfernt
-        #arch-chroot ${mountpoint} efibootmgr -c -d ${device} -p 1 -l \vmlinuz-linux -L "Arch Linux fallback efistub" -u "initrd=/initramfs-linux-fallback.img root=PARTUUID=${tobootdevice} rw ${parameter}"
+    # überschreibt die efistub deswegen entfernt
+    #arch-chroot ${mountpoint} efibootmgr -c -d ${device} -p 1 -l \vmlinuz-linux -L "Arch Linux fallback efistub" -u "initrd=/initramfs-linux-fallback.img root=PARTUUID=${tobootdevice} rw ${parameter}"
 
-        #arch-chroot ${mountpoint} bootctl install
+    #arch-chroot ${mountpoint} bootctl install
 
-    fi
+fi
 
 }
 
 function abfrage() {
-    read -p "Wie heissen sie?: " name
-    [[ -z "${name}" ]] && name=arch-linux
+read -p "Wie heissen sie?: " name
+[[ -z "${name}" ]] && name=arch-linux
 
-    # Partionierung
-    # GPT oder MBR
-    echo ""
-    echo "GPT = GUID Partition Table 64 Bit UEFI"
-    echo "Empfohlen fuer Neuere PCs"
-    echo "WICHTIG DAFUER MUESSEN SIE IM BOOTMENUE DEN UEFI USB_STICK AUSGEWAEHLT HABEN SONST KANN KEIN UEFI BOOTEINTRAG ERSTELLT WERDEN!!!"
-    echo ""
-    echo "MBR = Master Boot Record 32 Bit Legacy"
-    echo "Empfohlen fuer Alte PCs und portable USB-Sticks"
-    echo ""
-    echo "Bitte die Eingaben klein schreiben :D !!!"
-    echo "Für jedes ja must du ein y machen und für jedes nein ein n ok !!!"
-    echo ""
-    if mount | grep efi > /dev/null; then
-        echo "System unterstützt UEFI"
-        read -p "Wie moechten sie ihre Festplatte partioniert haben: [GPT/mbr] " Partition
-        [[ -z "${Partition}" ]] && Partition=gpt
+# Partionierung
+# GPT oder MBR
+echo ""
+echo "GPT = GUID Partition Table 64 Bit UEFI"
+echo "Empfohlen fuer Neuere PCs"
+echo "WICHTIG DAFUER MUESSEN SIE IM BOOTMENUE DEN UEFI USB_STICK AUSGEWAEHLT HABEN SONST KANN KEIN UEFI BOOTEINTRAG ERSTELLT WERDEN!!!"
+echo ""
+echo "MBR = Master Boot Record 32 Bit Legacy"
+echo "Empfohlen fuer Alte PCs und portable USB-Sticks"
+echo ""
+echo "Bitte die Eingaben klein schreiben :D !!!"
+echo "Für jedes ja must du ein y machen und für jedes nein ein n ok !!!"
+echo ""
+if mount | grep efi > /dev/null; then
+    echo "System unterstützt UEFI"
+    read -p "Wie moechten sie ihre Festplatte partioniert haben: [GPT/mbr] " Partition
+    [[ -z "${Partition}" ]] && Partition=gpt
+else
+    echo "System unterstützt kein UEFI"
+    read -p "Wie moechten sie ihre Festplatte partioniert haben: [gpt/MBR] " Partition
+    [[ -z "${Partition}" ]] && Partition=mbr
+fi
+
+if [ "${Partition}" == "gpt" ]
+then
+    read -p "Soll mit systemd gebootet werden oder mit grub? [systemd/GRUB] : " boot
+    if [ "${boot}" == "systemd" ]; then
+        read -p "Sollen noch zusätzliche Booteinträge erstelt werden? [Y/n] : " booteintraege
+    fi
+
+fi
+[[ -z "${boot}" ]] && boot=grub
+
+fdisk -l
+read -p "Geben sie eine Festplatte an: /dev/sda " device
+[[ -z "${device}" ]] && device=/dev/sda
+
+read -p "Welches Passwort soll der Root erhalten?: root " pass
+[[ -z "${pass}" ]] && pass=root
+
+read -p "Welches Dateisystem soll benutzt werden? [BTRFS/ext4] " dateisystem
+[[ -z "${dateisystem}" ]] && dateisystem=btrfs
+
+if [ "${dateisystem}" == "btrfs" ]; then
+    read -p "Soll ein raid gemacht werden?: [raid0/raid1/raid10/n] " raid
+    [[ -z "${raid}" ]] && raid=n
+    if [ "${raid}" == "n" ]; then
+        echo "Kein raid wird erzeugt!"
     else
-        echo "System unterstützt kein UEFI"
-        read -p "Wie moechten sie ihre Festplatte partioniert haben: [gpt/MBR] " Partition
-        [[ -z "${Partition}" ]] && Partition=mbr
+        fdisk -l
+        read -p "Bitte geben sie die Festplatten in eine Reihe an die zu einem Raid verbunden werden sollen!!!: " device1
     fi
+    echo "Standartmässige Snapshots / /home /opt /var/cache/pacman/pkg"
+    echo "Die Verzeichnisse dürfen sich nicht überlappen sonst kann es zu problemen mit dem unmounten kommen!!!"
+    read -p "Sollen mehr Snapshots erstellt werden?: " mountsnaps
+fi
 
-    if [ "${Partition}" == "gpt" ]
-    then
-        read -p "Soll mit systemd gebootet werden oder mit grub? [systemd/GRUB] : " boot
-        if [ "${boot}" == "systemd" ]; then
-            read -p "Sollen noch zusätzliche Booteinträge erstelt werden? [Y/n] : " booteintraege
-        fi
+read -p "Wollen sie eine swap-partition erstellen? : [Y/n] " swap
+read -p "Wollen sie eine swapfile erstellen? : [y/N] " swapfile
 
-    fi
-    [[ -z "${boot}" ]] && boot=grub
+if [ "${update}" != "n" ]; then
 
-    fdisk -l
-    read -p "Geben sie eine Festplatte an: /dev/sda " device
-    [[ -z "${device}" ]] && device=/dev/sda
+    echo "Diese einstellung kann man mit: "
+    echo "systemctl enable openvpn-client@client.service aktivieren und mit"
+    echo "systemctl disable openvpn-client@client.service deaktivieren"
+    echo "Die Bandbreite wird dadurch reduziert aber die Sicherheit deutlich erhöht"
+    read -p "Soll die Verbindung mit einer VPN verschlüsselt werden? : [Y/n] " openvpn
 
-    read -p "Welches Passwort soll der Root erhalten?: root " pass
-    [[ -z "${pass}" ]] && pass=root
+fi
 
-    read -p "Welches Dateisystem soll benutzt werden? [BTRFS/ext4] " dateisystem
-    [[ -z "${dateisystem}" ]] && dateisystem=btrfs
+if [ "${update}" != "n" ]; then
 
-    if [ "${dateisystem}" == "btrfs" ]; then
-        read -p "Soll ein raid gemacht werden?: [raid0/raid1/raid10/n] " raid
-        [[ -z "${raid}" ]] && raid=n
-        if [ "${raid}" == "n" ]; then
-            echo "Kein raid wird erzeugt!"
-        else
-            fdisk -l
-            read -p "Bitte geben sie die Festplatten in eine Reihe an die zu einem Raid verbunden werden sollen!!!: " device1
-        fi
-        echo "Standartmässige Snapshots / /home /opt /var/cache/pacman/pkg"
-        echo "Die Verzeichnisse dürfen sich nicht überlappen sonst kann es zu problemen mit dem unmounten kommen!!!"
-        read -p "Sollen mehr Snapshots erstellt werden?: " mountsnaps
-    fi
-
-    read -p "Wollen sie eine swap-partition erstellen? : [Y/n] " swap
-    read -p "Wollen sie eine swapfile erstellen? : [y/N] " swapfile
-
-    if [ "${update}" != "n" ]; then
-
-        echo "Diese einstellung kann man mit: "
-        echo "systemctl enable openvpn-client@client.service aktivieren und mit"
-        echo "systemctl disable openvpn-client@client.service deaktivieren"
-        echo "Die Bandbreite wird dadurch reduziert aber die Sicherheit deutlich erhöht"
-        read -p "Soll die Verbindung mit einer VPN verschlüsselt werden? : [Y/n] " openvpn
-
-    fi
-
-    if [ "${update}" != "n" ]; then
-
-        echo "WARNUNG das System wird nicht verschlüsselt!!!"
-        echo "WARNUNG ohne den USB-Stick startet das System nicht mehr!!!"
-        read -p "Soll ein USB-Stick als Schlüssel für das System installiert werden? : [y/N] " usbsecret
-        if [ "${usbsecret}" == "y" ]; then
-            read -p "Welcher USB-Stick soll ausgewählt werden für die USB-secret Schlüssel?: /dev/sdb1 " usbsecretdevice
-            [[ -z "${usbsecretdevice}" ]] && device=/dev/sdb1
-            usbsecretdeviceuuid=$(blkid -s UUID -o value ${usbsecretdevice})
-            [[ -z "${usbsecretdeviceuuid}" ]] && mkfs.ext4 ${usbsecretdevice}
-        fi
-    fi
-
-
-    # berechnungen
-
-    if [ "${update}" != "n" ] && [ "spectre-os" != "$(cat /etc/hostname)" ]; then
-        read -p "Soll eine Offline-Installation durchgefuehrt werden? : [Y/n] " offline
-        if [ "${offline}" != "n" ]
-        then
-            install="offline"
-        else
-            install="online"
-        fi
-    else
-        install="offline"
-    fi
-
-    # Dateisystem
-    if [ "${dateisystem}" == "btrfs" ]; then
-        mountpoint="/mnt/btrfs-current"
-    elif [ "${dateisystem}" == "ext4" ]; then
-        mountpoint="/mnt"
-    fi
-
-    #
-    echo "Name: ${name}"
-    echo "Partionsart: ${Partition}"
-    echo "Bootloader: ${boot}"
-    echo "Laufwerk: ${device}"
-    if [ "${raid}" != "n" ]; then
-        echo "Raid: ${raid}"
-        echo "Festplatten: ${device1}"
-    fi
-    echo "Dateisystem: ${dateisystem}"
-    echo "System-Partition ${speicher}"
-    if [ "${swap}" != "n" ]; then
-        echo "Swap-partition ${swapspeicher}"
-    fi
-    if [ "${swapfile}" == "y" ]; then
-        echo "Swapfile ${swapfilespeicher}"
-    fi
-    echo "Rootpasswort: ${pass}"
-    echo "Architektur: $(uname -m)"
-    echo "Installation: ${install}"
-    if [ "${dateisystem}" == "btrfs" ]; then
-        for wort in ${mountsnaps}
-        do
-            echo "Snapshot ${wort} wird erstellt!!!"
-        done
-    fi
-    if [ "${openvpn}" != "n" ]; then
-        echo "VPN-Verschlüsselung: aktiv"
-    fi
+    echo "WARNUNG das System wird nicht verschlüsselt!!!"
+    echo "WARNUNG ohne den USB-Stick startet das System nicht mehr!!!"
+    read -p "Soll ein USB-Stick als Schlüssel für das System installiert werden? : [y/N] " usbsecret
     if [ "${usbsecret}" == "y" ]; then
-        echo "USB-secret: aktiv"
-        echo "USB-UIDD: ${usbsecretdeviceuuid}"
-        echo "USB-Label: ${usbsecretdevice}"
+        read -p "Welcher USB-Stick soll ausgewählt werden für die USB-secret Schlüssel?: /dev/sdb1 " usbsecretdevice
+        [[ -z "${usbsecretdevice}" ]] && device=/dev/sdb1
+        usbsecretdeviceuuid=$(blkid -s UUID -o value ${usbsecretdevice})
+        [[ -z "${usbsecretdeviceuuid}" ]] && mkfs.ext4 ${usbsecretdevice}
     fi
+fi
 
-    # Partitionierung
 
-    if [ "${dateisystem}" == "btrfs" ]; then
-        if [ "${Partition}" == "gpt" ]; then
-            bootpartitionnummer=1
-            echo "Boot-Partition = ${device}${bootpartitionnummer}"
-            efipartitionnummer=2
-            echo "EFI-Partition = ${device}${efipartitionnummer}"
-            rootpartitionnummer=3
-            echo "ROOT-Partition = ${device}${rootpartitionnummer}"
-            if [ "${swap}" != "n" ]; then
-                swappartitionnummer=4
-                echo "Swap-Partition = ${device}${swappartitionnummer}"
-            fi
-        elif [ "${Partition}" == "mbr" ]; then
-            bootpartitionnummer=1
-            echo "Boot-Partition = ${device}${bootpartitionnummer}"
-            efipartitionnummer=2
-            echo "EFI-Partition = ${device}${efipartitionnummer}"
-            rootpartitionnummer=3
-            echo "ROOT-Partition = ${device}${rootpartitionnummer}"
-            if [ "${swap}" != "n" ]; then
-                swappartitionnummer=4
-                echo "Swap-Partition = ${device}${swappartitionnummer}"
-            fi
-        fi
-    elif [ "${dateisystem}" == "ext4" ]; then
-        if [ "${Partition}" == "gpt" ]; then
-            bootpartitionnummer=1
-            echo "Boot-Partition = ${device}${bootpartitionnummer}"
-            efipartitionnummer=2
-            echo "EFI-Partition = ${device}${efipartitionnummer}"
-            rootpartitionnummer=3
-            echo "ROOT-Partition = ${device}${rootpartitionnummer}"
-            if [ "${swap}" != "n" ]; then
-                swappartitionnummer=4
-                echo "Swap-Partition = ${device}${swappartitionnummer}"
-            fi
-        elif [ "${Partition}" == "mbr" ]; then
-            bootpartitionnummer=1
-            echo "Boot-Partition = ${device}${bootpartitionnummer}"
-            efipartitionnummer=2
-            echo "EFI-Partition = ${device}${efipartitionnummer}"
-            rootpartitionnummer=3
-            echo "ROOT-Partition = ${device}${rootpartitionnummer}"
-            if [ "${swap}" != "n" ]; then
-                swappartitionnummer=4
-                echo "Swap-Partition = ${device}${swappartitionnummer}"
-            fi
-        fi
-    fi
+# berechnungen
 
-    #
-    read -p "Sind alle Angaben Richtig?: [y/N] " sicherheitsabfrage
-    if [ "$sicherheitsabfrage" != "y" ]
+if [ "${update}" != "n" ] && [ "spectre-os" != "$(cat /etc/hostname)" ]; then
+    read -p "Soll eine Offline-Installation durchgefuehrt werden? : [Y/n] " offline
+    if [ "${offline}" != "n" ]
     then
-        echo "ABGEBROCHEN"
-        exit 1
+        install="offline"
+    else
+        install="online"
     fi
-    if [ "${update}" != "n" ] && [ "spectre-os" != "$(cat /etc/hostname)" ]; then
-        echo "Nur für reine arch-linux systeme benötigend!!!"
-        read -p "Sollen noch wichtige Packete für die installation installiert werden? [y/N] " packete
-        if [ "${packete}" == "y" ]; then
-            pacman -Syu base base-devel syslinux efibootmgr efitools grub intel-ucode os-prober btrfs-progs dosfstools arch-install-scripts xorriso cdrtools squashfs-tools wget dosfstools btrfs-progs gdisk dialog bash-completion git iw wireless_tools wpa_supplicant
+else
+    install="offline"
+fi
+
+# Dateisystem
+if [ "${dateisystem}" == "btrfs" ]; then
+    mountpoint="/mnt/btrfs-current"
+elif [ "${dateisystem}" == "ext4" ]; then
+    mountpoint="/mnt"
+fi
+
+#
+echo "Name: ${name}"
+echo "Partionsart: ${Partition}"
+echo "Bootloader: ${boot}"
+echo "Laufwerk: ${device}"
+if [ "${raid}" != "n" ]; then
+    echo "Raid: ${raid}"
+    echo "Festplatten: ${device1}"
+fi
+echo "Dateisystem: ${dateisystem}"
+echo "System-Partition ${speicher}"
+if [ "${swap}" != "n" ]; then
+    echo "Swap-partition ${swapspeicher}"
+fi
+if [ "${swapfile}" == "y" ]; then
+    echo "Swapfile ${swapfilespeicher}"
+fi
+echo "Rootpasswort: ${pass}"
+echo "Architektur: $(uname -m)"
+echo "Installation: ${install}"
+if [ "${dateisystem}" == "btrfs" ]; then
+    for wort in ${mountsnaps}
+    do
+        echo "Snapshot ${wort} wird erstellt!!!"
+    done
+fi
+if [ "${openvpn}" != "n" ]; then
+    echo "VPN-Verschlüsselung: aktiv"
+fi
+if [ "${usbsecret}" == "y" ]; then
+    echo "USB-secret: aktiv"
+    echo "USB-UIDD: ${usbsecretdeviceuuid}"
+    echo "USB-Label: ${usbsecretdevice}"
+fi
+
+# Partitionierung
+
+if [ "${dateisystem}" == "btrfs" ]; then
+    if [ "${Partition}" == "gpt" ]; then
+        bootpartitionnummer=1
+        efipartitionnummer=2
+        rootpartitionnummer=3
+        if [ "${swap}" != "n" ]; then
+            swappartitionnummer=3
+            rootpartitionnummer=4
+        fi
+    elif [ "${Partition}" == "mbr" ]; then
+        bootpartitionnummer=1
+        efipartitionnummer=2
+        rootpartitionnummer=3
+        if [ "${swap}" != "n" ]; then
+            swappartitionnummer=3
+            rootpartitionnummer=4
         fi
     fi
-    echo "Betriebssystem wird installiert!!!"
-    sleep 5
+elif [ "${dateisystem}" == "ext4" ]; then
+    if [ "${Partition}" == "gpt" ]; then
+        bootpartitionnummer=1
+        efipartitionnummer=2
+        rootpartitionnummer=3
+        if [ "${swap}" != "n" ]; then
+            swappartitionnummer=3
+            rootpartitionnummer=4
+        fi
+    elif [ "${Partition}" == "mbr" ]; then
+        bootpartitionnummer=1
+        efipartitionnummer=2
+        rootpartitionnummer=3
+        if [ "${swap}" != "n" ]; then
+            swappartitionnummer=3
+            rootpartitionnummer=4
+        fi
+    fi
+fi
+
+echo "Boot-Partition = ${device}${bootpartitionnummer}"
+echo "EFI-Partition = ${device}${efipartitionnummer}"
+echo "Swap-Partition = ${device}${swappartitionnummer}"
+echo "ROOT-Partition = ${device}${rootpartitionnummer}"
+
+
+#
+read -p "Sind alle Angaben Richtig?: [y/N] " sicherheitsabfrage
+if [ "$sicherheitsabfrage" != "y" ]
+then
+    echo "ABGEBROCHEN"
+    exit 1
+fi
+if [ "${update}" != "n" ] && [ "spectre-os" != "$(cat /etc/hostname)" ]; then
+    echo "Nur für reine arch-linux systeme benötigend!!!"
+    read -p "Sollen noch wichtige Packete für die installation installiert werden? [y/N] " packete
+    if [ "${packete}" == "y" ]; then
+        pacman -Syu base base-devel syslinux efibootmgr efitools grub intel-ucode os-prober btrfs-progs dosfstools arch-install-scripts xorriso cdrtools squashfs-tools wget dosfstools btrfs-progs gdisk dialog bash-completion git iw wireless_tools wpa_supplicant
+    fi
+fi
+echo "Betriebssystem wird installiert!!!"
+sleep 5
 }
 
 
@@ -682,98 +708,71 @@ function abfrage() {
 
 if [ "${1}" != "n" ]
 then
-    read -p "Soll im Internet geguckt werden ob es ein neues Install-Script gibt und dann ausgefuehrt werden?: [Y/n] " update
-    if [ "${update}" == "debug" ]
+read -p "Soll im Internet geguckt werden ob es ein neues Install-Script gibt und dann ausgefuehrt werden?: [Y/n] " update
+if [ "${update}" == "debug" ]
+then
+    echo "Überspringe das herunterladen einen neuen Scriptes!!!"
+else
+    if [ "${update}" != "n" ]
     then
-        echo "Überspringe das herunterladen einen neuen Scriptes!!!"
-    else
-        if [ "${update}" != "n" ]
-        then
-            update https://raw.githubusercontent.com/simono41/Simon-OS/master/arch-install /root/arch-install.new n
-            exit 0
-        fi
+        update https://raw.githubusercontent.com/simono41/Simon-OS/master/arch-install /root/arch-install.new n
+        exit 0
     fi
 fi
 
 # debug = Installation überspringen zu arch-graphical-install und DEBEUG-MODUS
 abfrage
-if [ "${name}" != "debug" ]
+
+secureumount
+
+fi
+
+#
+echo "Eine Säuberung erhört die chance der Installation auf dem System."
+echo "Es kann eine Zeit lang dauern!"
+dd if=/dev/zero of=${device} bs=64M count=10 status=progress
+#
+if [ "${Partition}" == "gpt" ]
 then
-    #
-    if cat /proc/mounts | grep ${device}1 > /dev/null; then
-        echo "gemountet"
-        umount ${device}1
-    else
-        echo "nicht gemountet"
-    fi
-    #
-    if cat /proc/mounts | grep ${device}2 > /dev/null; then
-        echo "gemountet"
-        umount ${device}2
-    else
-        echo "nicht gemountet"
-    fi
-    #
-    if cat /proc/mounts | grep ${device}3 > /dev/null; then
-        echo "gemountet"
-        umount ${device}2
-    else
-        echo "nicht gemountet"
-    fi
-    #
-    if cat /proc/mounts | grep /mnt > /dev/null; then
-        echo "gemountet"
-        umount -R /mnt
-    else
-        echo "nicht gemountet"
-    fi
+echo "Partioniere in GPT"
 
-    #
-    echo "Eine Säuberung erhört die chance der Installation auf dem System."
-    echo "Es kann eine Zeit lang dauern!"
-    dd if=/dev/zero of=${device} bs=64M count=10 status=progress
-    #
-    if [ "${Partition}" == "gpt" ]
-    then
-        echo "Partioniere in GPT"
-
-        if [ "${swap}" != "n" ]; then
-            echo "Erstelle zustzliche swap-partition"
-            partionierenmitswap
-        else
-            partionierenohneswap
-        fi
-        echo "installation"
-        installation
-        arch-chroot ${mountpoint} /bin/bash <<EOT
+if [ "${swap}" != "n" ]; then
+echo "Erstelle zustzliche swap-partition"
+partionierenmitswap
+else
+partionierenohneswap
+fi
+echo "installation"
+installation
+arch-chroot ${mountpoint} /bin/bash <<EOT
 mkinitcpio -p linux
 passwd
 ${pass}
 ${pass}
 EOT
-        echo ""
-        if [ "${boot}" == "grub" ]
-        then
-            arch-chroot ${mountpoint} /bin/bash <<EOT
+echo ""
+if [ "${boot}" == "grub" ]
+then
+arch-chroot ${mountpoint} /bin/bash <<EOT
   grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id="${name}"s-os --recheck
   grub-mkconfig -o /boot/grub/grub.cfg
 EOT
-        else
-            systemdboot
-        fi
-        removeinstaller
-        echo "Fertig"
-    elif [ "${Partition}" == "mbr" ]; then
-        echo "Partioniere in MBR"
-        if [ "${swap}" != "n" ]; then
-            echo "Erstelle zustzliche swap-partition"
-            partionierenmitswap
-        else
-            partionierenohneswap
-        fi
-        echo "installation"
-        installation
-        arch-chroot ${mountpoint} /bin/bash <<EOT
+else
+systemdboot
+fi
+removeinstaller
+echo "Fertig"
+elif [ "${Partition}" == "mbr" ]; then
+echo "Partioniere in MBR"
+if [ "${swap}" != "n" ]; then
+echo "Erstelle zustzliche swap-partition"
+partionierenmitswap
+else
+partionierenohneswap
+fi
+echo "installation"
+installation
+arch-chroot ${mountpoint} /bin/bash <<EOT
 mkinitcpio -p linux
 passwd
 ${pass}
@@ -781,60 +780,43 @@ ${pass}
 grub-install --target=i386-pc --recheck ${device}
 grub-mkconfig -o /boot/grub/grub.cfg
 EOT
-        removeinstaller
-        echo "Fertig"
-    else
-        echo "Eingabe Ungueltig"
-        exit 1
-    fi
+removeinstaller
+echo "Fertig"
+else
+echo "Eingabe Ungueltig"
+exit 1
+fi
 fi
 
 if [ "${name}" == "debug" ]
 then
-    echo "DEBEUG-MODUS"
-    echo "Wenn kein befehl mehr ausgefuehrt werden muss einfach eingabetaste druecken"
-    echo "Welcher befehl soll ausgefuert werden? "
+echo "DEBEUG-MODUS"
+echo "Wenn kein befehl mehr ausgefuehrt werden muss einfach eingabetaste druecken"
+echo "Welcher befehl soll ausgefuert werden? "
 
-    befehl=blablabla
-    while [ "$befehl" != "" ]
-    do
-        read -p "" befehl
-        $befehl
-    done
+befehl=blablabla
+while [ "$befehl" != "" ]
+do
+read -p "" befehl
+$befehl
+done
 
 fi
 
 if [ "${update}" != "n" ] && [ "spectre-os" != "$(cat /etc/hostname)" ]; then
-    read -p "Soll die erweiterte Installation durchgeführt werden? [Y/n] " graphical
-    if [ "$graphical" != "n" ]
-    then
-        update https://raw.githubusercontent.com/simono41/Simon-OS/master/arch-graphical-install ${mountpoint}/root/arch-graphical-install "n" "arch-chroot ${mountpoint}" /root/arch-graphical-install
-    fi
+read -p "Soll die erweiterte Installation durchgeführt werden? [Y/n] " graphical
+if [ "$graphical" != "n" ]
+then
+update https://raw.githubusercontent.com/simono41/Simon-OS/master/arch-graphical-install ${mountpoint}/root/arch-graphical-install "n" "arch-chroot ${mountpoint}" /root/arch-graphical-install
+fi
 fi
 echo "df!!!"
 df -h ${mountpoint}
 if [ "${dateisystem}" == "btrfs" ]; then
-btrfs fi df ${mountpoint}
+btrfs filesystem df ${mountpoint}
+fi
 echo "umount!!!"
-umount ${mountpoint}/home
-umount ${mountpoint}/opt
-umount ${mountpoint}/var/cache/pacman/pkg
-umount ${mountpoint}/var/lib
-# custom-mounts
-for wort in ${mountsnaps}
-do
-    umount ${mountpoint}${wort}
-done
-if [ "${Partition}" == "gpt" ]; then
-    umount ${mountpoint}/boot
-fi
-umount /mnt/btrfs-root
-#umount -R /mnt
-else
-umount ${mountpoint}
-
-fi
-
+secureumount
 echo ""
 echo "Fertig!!!"
 read -p "Installation erfolgreich Abgeschlossen. Wollen sie den PC NEUSTARTEN?: [Y/n] " sicherheitsabfrage
