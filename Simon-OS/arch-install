@@ -274,6 +274,7 @@ if [ "${swap}" != "n" ]; then
     if [ "${verschluesselung}" == "y" ]; then
         swappartition=$(blkid -s PARTUUID -o value ${device}${swappartitionnummer})
         echo "swap PARTUUID=${swappartition} /dev/urandom swap,cipher=aes-cbc-essiv:sha256,size=256" >> ${mountpoint}/etc/crypttab
+        echo "/dev/mapper/swap none swap defaults 0 0" >> ${mountpoint}/etc/fstab
     else
         swappartition=$(blkid -s PARTUUID -o value ${device}${swappartitionnummer})
         echo "PARTUUID=${swappartition} none swap defaults 0 0" >> ${mountpoint}/etc/fstab
@@ -507,7 +508,7 @@ ${before} ${of} ${parameters}
 }
 
 function systemdboot() {
-tobootdevice=$(blkid -s PARTUUID -o value ${device}${rootpartitionnummer})
+tobootdeviceuuid=$(blkid -s PARTUUID -o value ${device}${rootpartitionnummer})
 swappartitionpart=$(blkid -s PARTUUID -o value ${device}${swappartitionnummer})
 
 # zurücksetzen der parameter
@@ -517,7 +518,10 @@ if [ "${swap}" != "n" ]; then
     parameter="${parameter}resume=PARTUUID=${swappartitionpart} "
 fi
 if [ "${verschluesselung}" == "y" ]; then
-    parameter="${parameter}cryptdevice=PARTUUID=${tobootdevice}:luks0 "
+    tobootdevice=${deviceluks}
+    parameter="${parameter}cryptdevice=PARTUUID=${tobootdeviceuuid}:luks0 "
+else
+    tobootdevice="PARTUUID=${tobootdeviceuuid}"
 fi
 if [ "${dateisystem}" == "btrfs" ]; then
     parameter="${parameter}rootflags=subvol=__current/ROOT "
@@ -535,13 +539,13 @@ echo "title    "${name}"s-os" > ${mountpoint}/boot/loader/entries/arch-uefi.conf
 echo "linux    /vmlinuz-linux" >> ${mountpoint}/boot/loader/entries/arch-uefi.conf
 echo "initrd   /intel-ucode.img" >> ${mountpoint}/boot/loader/entries/arch-uefi.conf
 echo "initrd   /initramfs-linux.img" >> ${mountpoint}/boot/loader/entries/arch-uefi.conf
-echo "options  root=PARTUUID=${tobootdevice} rw ${parameter}" >> ${mountpoint}/boot/loader/entries/arch-uefi.conf
+echo "options  root=${tobootdevice} rw ${parameter}" >> ${mountpoint}/boot/loader/entries/arch-uefi.conf
 
 echo "title    "${name}"s-os" > ${mountpoint}/boot/loader/entries/arch-uefi-fallback.conf
 echo "linux    /vmlinuz-linux" >> ${mountpoint}/boot/loader/entries/arch-uefi-fallback.conf
 echo "initrd   /intel-ucode.img" >> ${mountpoint}/boot/loader/entries/arch-uefi-fallback.conf
 echo "initrd   /initramfs-linux-fallback.img" >> ${mountpoint}/boot/loader/entries/arch-uefi-fallback.conf
-echo "options  root=PARTUUID=${tobootdevice} rw ${parameter}" >> ${mountpoint}/boot/loader/entries/arch-uefi-fallback.conf
+echo "options  root=${tobootdevice} rw ${parameter}" >> ${mountpoint}/boot/loader/entries/arch-uefi-fallback.conf
 
 echo "default   arch-uefi" > ${mountpoint}/boot/loader/loader.conf
 echo "timeout   1" >> ${mountpoint}/boot/loader/loader.conf
@@ -552,10 +556,10 @@ if [ "${booteintraege}" != "n" ]; then
 
     arch-chroot ${mountpoint} efibootmgr -c -d ${device} -p 1 -l /EFI/systemd/systemd-bootx64.efi -L "Linux Boot Manager"
 
-    arch-chroot ${mountpoint} efibootmgr -c -d ${device} -p 1 -l \vmlinuz-linux -L "Arch Linux efistub" -u "initrd=/initramfs-linux.img root=PARTUUID=${tobootdevice} rw ${parameter}"
+    arch-chroot ${mountpoint} efibootmgr -c -d ${device} -p 1 -l \vmlinuz-linux -L "Arch Linux efistub" -u "initrd=/initramfs-linux.img root=${tobootdevice} rw ${parameter}"
 
     # überschreibt die efistub deswegen entfernt
-    #arch-chroot ${mountpoint} efibootmgr -c -d ${device} -p 1 -l \vmlinuz-linux -L "Arch Linux fallback efistub" -u "initrd=/initramfs-linux-fallback.img root=PARTUUID=${tobootdevice} rw ${parameter}"
+    #arch-chroot ${mountpoint} efibootmgr -c -d ${device} -p 1 -l \vmlinuz-linux -L "Arch Linux fallback efistub" -u "initrd=/initramfs-linux-fallback.img root=${tobootdevice} rw ${parameter}"
 
     #arch-chroot ${mountpoint} bootctl install
 
