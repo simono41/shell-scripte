@@ -36,6 +36,7 @@ function secureumount() {
         do
             umount ${mountpoint}${wort}
         done
+        umount ${mountpoint}
         umount /mnt/btrfs-root
         #umount -R /mnt
     fi
@@ -737,10 +738,10 @@ then
 echo "Partioniere in GPT"
 
 if [ "${swap}" != "n" ]; then
-echo "Erstelle zustzliche swap-partition"
-partionierenmitswap
+    echo "Erstelle zustzliche swap-partition"
+    partionierenmitswap
 else
-partionierenohneswap
+    partionierenohneswap
 fi
 echo "installation"
 installation
@@ -753,22 +754,22 @@ EOT
 echo ""
 if [ "${boot}" == "grub" ]
 then
-arch-chroot ${mountpoint} /bin/bash <<EOT
-  grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id="${name}"s-os --recheck
-  grub-mkconfig -o /boot/grub/grub.cfg
+    arch-chroot ${mountpoint} /bin/bash <<EOT
+grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id="${name}"s-os --recheck
+grub-mkconfig -o /boot/grub/grub.cfg
 EOT
 else
-systemdboot
+    systemdboot
 fi
 removeinstaller
 echo "Fertig"
 elif [ "${Partition}" == "mbr" ]; then
 echo "Partioniere in MBR"
 if [ "${swap}" != "n" ]; then
-echo "Erstelle zustzliche swap-partition"
-partionierenmitswap
+    echo "Erstelle zustzliche swap-partition"
+    partionierenmitswap
 else
-partionierenohneswap
+    partionierenohneswap
 fi
 echo "installation"
 installation
@@ -786,7 +787,6 @@ else
 echo "Eingabe Ungueltig"
 exit 1
 fi
-fi
 
 if [ "${name}" == "debug" ]
 then
@@ -797,8 +797,8 @@ echo "Welcher befehl soll ausgefuert werden? "
 befehl=blablabla
 while [ "$befehl" != "" ]
 do
-read -p "" befehl
-$befehl
+    read -p "" befehl
+    $befehl
 done
 
 fi
@@ -807,7 +807,7 @@ if [ "${update}" != "n" ] && [ "spectre-os" != "$(cat /etc/hostname)" ]; then
 read -p "Soll die erweiterte Installation durchgeführt werden? [Y/n] " graphical
 if [ "$graphical" != "n" ]
 then
-update https://raw.githubusercontent.com/simono41/Simon-OS/master/arch-graphical-install ${mountpoint}/root/arch-graphical-install "n" "arch-chroot ${mountpoint}" /root/arch-graphical-install
+    update https://raw.githubusercontent.com/simono41/Simon-OS/master/arch-graphical-install ${mountpoint}/root/arch-graphical-install "n" "arch-chroot ${mountpoint}" /root/arch-graphical-install
 fi
 fi
 echo "df!!!"
