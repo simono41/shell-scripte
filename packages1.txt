@@ -1,0 +1,3 @@
+pacman -Sy
+
+pacman -S wpa_supplicant dialog intel-ucode gnome gnome-extra networkmanager dnsmasq btrfs-progs grub efibootmgr dosfstools gptfdisk
