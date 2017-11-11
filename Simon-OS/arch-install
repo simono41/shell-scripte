@@ -421,16 +421,16 @@ if [ "${verschluesselung}" == "y" ]; then
 
     elif [ "${Partition}" == "mbr" ]; then
 
-        echo -e "UUID=${rootbind} / btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/ROOT 0 0" >> ${mountpoint}/etc/fstab
+        echo -e "${deviceluks} / btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/ROOT 0 0" >> ${mountpoint}/etc/fstab
 
-        echo -e "UUID=${rootbind} /home btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/home 0 0" >> ${mountpoint}/etc/fstab
-        echo -e "UUID=${rootbind} /opt btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/opt 0 0" >> ${mountpoint}/etc/fstab
-        echo -e "UUID=${rootbind} /var/cache/pacman/pkg btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/var/cache/pacman/pkg 0 0" >> ${mountpoint}/etc/fstab
+        echo -e "${deviceluks} /home btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/home 0 0" >> ${mountpoint}/etc/fstab
+        echo -e "${deviceluks} /opt btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/opt 0 0" >> ${mountpoint}/etc/fstab
+        echo -e "${deviceluks} /var/cache/pacman/pkg btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current/var/cache/pacman/pkg 0 0" >> ${mountpoint}/etc/fstab
 
         # custom-mounts
         for wort in ${mountsnaps}
         do
-            echo -e "UUID=${rootbind} ${wort} btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current${wort} 0 0" >> ${mountpoint}/etc/fstab
+            echo -e "${deviceluks} ${wort} btrfs rw,noatime,nodiratime,space_cache,discard,ssd,compress=lzo,subvol=__current${wort} 0 0" >> ${mountpoint}/etc/fstab
         done
     fi
 
