@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -ex
+
 # Secure OpenVPN server installer for Debian, Ubuntu, CentOS and Arch Linux
 # https://github.com/Angristan/OpenVPN-install
 
@@ -604,7 +606,7 @@ verb 3" >> /etc/openvpn/server.conf
 	if [[ "$OS" = 'debian' ]]; then
 		# Little hack to check for systemd
 		if pgrep systemd-journal; then
-			if [[ "$VERSION_ID" = 'VERSION_ID="9"' ]]; then
+			if [[ "$VERSION_ID" = 'VERSION_ID="9"' ]] || [[ "$VERSION_ID" = 'VERSION_ID="16.04"' ]]; then
 				#Workaround to fix OpenVPN service on Debian 9 OpenVZ
 				sed -i 's|LimitNPROC|#LimitNPROC|' /lib/systemd/system/openvpn-server\@.service
 				sed -i 's|/etc/openvpn/server|/etc/openvpn|' /lib/systemd/system/openvpn-server\@.service
@@ -622,6 +624,7 @@ verb 3" >> /etc/openvpn/server.conf
 		if pgrep systemd-journal; then
 			if [[ "$OS" = 'arch' ]]; then
 				#Workaround to avoid rewriting the entire script for Arch
+				sed -i 's|LimitNPROC|#LimitNPROC|' /lib/systemd/system/openvpn-server\@.service
 				sed -i 's|/etc/openvpn/server|/etc/openvpn|' /usr/lib/systemd/system/openvpn-server@.service
 				sed -i 's|%i.conf|server.conf|' /usr/lib/systemd/system/openvpn-server@.service
 				systemctl daemon-reload
