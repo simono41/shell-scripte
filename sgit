@@ -11,6 +11,7 @@ echo "Bitte email und commit angeben!!!"
 exit 1
 fi
 
+git config --global push.default simple
 git config --global user.email "${1}"
 git config --global user.name "${1}"
 git status
