@@ -2,11 +2,14 @@
 
 set -ex
 
+#$(( (23-2)*2/3 ))
+#cuts=$(( $1-1 ))
 cuts="$1"
 shift
 name=0
 
-# wenn 100 daten und 3 cuts = 33 files
+# wenn 108 daten und 5 cute = 21 files je ein cut
+# wenn 100 daten und 3 cuts = 33 files je ein cut
 files="$(expr $# / $cuts)"
 create=0
 i=0
@@ -18,6 +21,7 @@ do
 	if [ "$create" == "$i" ]; then
 	  create="$(expr $create + $files)"
 	  name="$(expr $name + 1)"
+          echo ${name}
 	fi
 	i="$(expr $i + 1)"
 
