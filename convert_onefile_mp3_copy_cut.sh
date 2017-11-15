@@ -2,12 +2,8 @@
 
 set -ex
 
-if [ -z "${cuts}" ]] ;then
-  cuts=2
-else
-  cuts="$1"
-  shift
-fi
+cuts="$1"
+shift
 name=0
 
 # wenn 100 daten und 3 cuts = 33 files
@@ -25,6 +21,7 @@ do
 	fi
 	i="$(expr $i + 1)"
 
+        echo "${1%/*}"
         cd "${1%/*}" # gehe ins Verzeichnis
 
         FILENAME=${1##*/} # Dateiname ist alles ab dem letzten '/'

@@ -2,12 +2,8 @@
 
 set -ex
 
-if [ -z "${cuts}" ]] ;then
-  cuts=2
-else
-  cuts="$1"
-  shift
-fi
+cuts="$1"
+shift
 name=0
 
 # wenn 100 daten und 3 cuts = 33 files
