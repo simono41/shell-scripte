@@ -5,7 +5,7 @@ set -ex
 if [ "$1" == "--help" ] || [[ -z "$1" ]]
 then
 echo "bitte alles kleinschreiben"
-echo "bash ./youtube-dl.sh SUCHE/NOSUCHE URL/SUCHE FORMAT VOLLBILD/NOVOLLBILD"
+echo "bash ./youtube-dl.sh suche/NOSUCHE URL/SUCHE FORMAT vollbild/NOVOLLBILD"
 echo "Formate: [opus/m4a/video/hd/fullhd/4k]"
 exit 0
 fi
@@ -19,7 +19,7 @@ then
 voll="-fs"
 fi
 
-#read -p "Wie ist die URL? : " url
+#read -p "Wie ist die URL/suche? : " url
 #read -p "Wo sollen die Dateien heruntergeladen werden? : " pfad
 #read -p "Soll ein Video heruntergeladen werden oder Audio? [opus/m4a/video/hd/fullhd/4k] : " format
 
