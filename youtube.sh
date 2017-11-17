@@ -4,19 +4,24 @@ set -ex
 
 if [ "$1" == "--help" ] || [[ -z "$1" ]]
 then
-echo "bitte alles kleinschreiben"
-echo "bash ./youtube-dl.sh suche/NOSUCHE URL/SUCHE FORMAT vollbild/NOVOLLBILD"
-echo "Formate: [opus/m4a/video/hd/fullhd/4k]"
-exit 0
+    echo "bitte alles kleinschreiben"
+    echo "bash ./youtube-dl.sh suche/NOSUCHE URL/SUCHE FORMAT vollbild/NOVOLLBILD"
+    echo "Formate: [opus/m4a/video/hd/fullhd/4k]"
+    exit 0
 fi
 
-suche="$1"
-url="$2"
-format="$3"
+if [ "$1" == "suche" ] || [ "$1" == "nosuche" ]; then
+    suche="$1"
+    url="$2"
+    format="$3"
+else
+    url="$1"
+    format="$2"
+fi
 
 if [ "$4" == "vollbild" ]
 then
-voll="-fs"
+    voll="-fs"
 fi
 
 #read -p "Wie ist die URL/suche? : " url
@@ -45,7 +50,7 @@ fi
 
 if [ "$suche" == "suche" ]
 then
-youtube-dl "ytsearch:$url" -q --force-ipv4 $format -o- | mplayer $voll -cache 8192 -
+    youtube-dl "ytsearch:$url" -q --force-ipv4 $format -o- | mplayer $voll -cache 8192 -
 else
-youtube-dl -q --force-ipv4 $format -o- $url | mplayer $voll -cache 8192 -
+    youtube-dl -q --force-ipv4 $format -o- $url | mplayer $voll -cache 8192 -
 fi
