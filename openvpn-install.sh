@@ -248,8 +248,9 @@ else
     echo "   5) CAMELLIA-192-CBC"
     echo "   6) CAMELLIA-256-CBC"
     echo "   7) SEED-CBC"
+    echo "   8) BF-CBC"
     while [[ $CIPHER != "1" && $CIPHER != "2" && $CIPHER != "3" && $CIPHER != "4" && $CIPHER != "5" && $CIPHER != "6" && $CIPHER != "7" ]]; do
-        read -p "Cipher [1-7]: " -e -i 1 CIPHER
+        read -p "Cipher [1-8]: " -e -i 1 CIPHER
     done
     case $CIPHER in
         1)
@@ -272,6 +273,8 @@ else
             ;;
         7)
             CIPHER="cipher SEED-CBC"
+            ;;
+        8)  CIPHER="cipher BF-CBC"
             ;;
     esac
     echo ""
