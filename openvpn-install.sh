@@ -496,7 +496,8 @@ persist-tun
 keepalive 10 120
 topology subnet
 server 10.8.0.0 255.255.255.0
-    push \"route 10.8.0.0 255.255.255.0\"" >> /etc/openvpn/server.conf
+duplicate-cn
+push \"route 10.8.0.0 255.255.255.0\"" >> /etc/openvpn/server.conf
     # DNS resolvers
     case $DNS in
         1)
@@ -544,7 +545,7 @@ tls-server
 tls-version-min 1.2
 tls-cipher TLS-DHE-RSA-WITH-AES-128-GCM-SHA256
 status openvpn.log
-    verb 3" >> /etc/openvpn/server.conf
+verb 3" >> /etc/openvpn/server.conf
 
     # Create the sysctl configuration file if needed (mainly for Arch Linux)
     if [[ ! -e $SYSCTL ]]; then
@@ -681,7 +682,7 @@ tls-client
 tls-version-min 1.2
 tls-cipher TLS-DHE-RSA-WITH-AES-128-GCM-SHA256
 setenv opt block-outside-dns
-    verb 3" >> /etc/openvpn/client-template.txt
+verb 3" >> /etc/openvpn/client-template.txt
 
     # Generate the custom client.ovpn
     newclient "$CLIENT"
