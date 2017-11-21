@@ -493,7 +493,7 @@ persist-tun
 keepalive 10 120
 topology subnet
 server 10.8.0.0 255.255.255.0
-    ifconfig-pool-persist ipp.txt" >> /etc/openvpn/server.conf
+    push \"route 10.8.0.0 255.255.255.0\"" >> /etc/openvpn/server.conf
     # DNS resolvers
     case $DNS in
         1)
@@ -536,6 +536,7 @@ tls-auth tls-auth.key 0
 dh dh.pem
 auth SHA256
 $CIPHER
+comp-lzo
 tls-server
 tls-version-min 1.2
 tls-cipher TLS-DHE-RSA-WITH-AES-128-GCM-SHA256
@@ -672,6 +673,7 @@ remote-cert-tls server
 auth SHA256
 auth-nocache
 $CIPHER
+comp-lzo
 tls-client
 tls-version-min 1.2
 tls-cipher TLS-DHE-RSA-WITH-AES-128-GCM-SHA256
