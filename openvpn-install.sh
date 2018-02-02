@@ -7,7 +7,8 @@ set -ex
 
 if [[ "$EUID" -ne 0 ]]; then
     echo "Sorry, you need to run this as root"
-    exit 1
+    sudo $0
+    exit 0
 fi
 
 if [[ ! -e /dev/net/tun ]]; then
