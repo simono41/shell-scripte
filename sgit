@@ -20,5 +20,5 @@ git add --all
 git commit --all -m "${2}"
 git pull
 git show
-git push
+git push "${3}"
 git status

@@ -2,6 +2,7 @@
 
 set -ex
 
+git config --global core.editor "nano"
 git add --all
 git commit --amend
 git show
