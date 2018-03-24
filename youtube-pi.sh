@@ -6,7 +6,7 @@ if [ "$1" == "--help" ] || [[ -z "$1" ]]
 then
     echo "bitte alles kleinschreiben"
     echo "bash ./youtube-dl.sh SUCHE/NOSUCHE URL/SUCHE FORMAT OUTPUT"
-    echo "Formate: [opus/m4a/video/hd/fullhd/4k]"
+    echo "Formate: [VERYLOW/LOW/MEDIUM/HIGH]"
     exit 0
 fi
 
@@ -22,36 +22,34 @@ else
 fi
 
 if [ -z ${output} ]; then
-output="hdmi"
+output="local"
+fi
+
+if [ "$format" == "verylow" ]
+then
+    format="-f 17"
+elif [ "$format" == "low" ]
+then
+    format="-f 36"
+elif [ "$format" == "medium" ]
+then
+    format="-f 18"
+#elif [ "$format" == "high" ]
+else
+#then
+    format="-f 22"
 fi
 
 #read -p "Wie ist die URL? : " url
 #read -p "Wo sollen die Dateien heruntergeladen werden? : " pfad
 #read -p "Soll ein Video heruntergeladen werden oder Audio? [opus/m4a/video/hd/fullhd/4k] : " format
 
-if [ "$format" == "opus" ]
-then
-    format="-f 251"
-elif [ "$format" == "m4a" ]
-then
-    format="-f 140"
-elif [ "$format" == "video" ]
-then
-    format="-f 43"
-elif [ "$format" == "hd" ]
-then
-    format="-f 247+251"
-elif [ "$format" == "fullhd" ]
-then
-    format="-f 303+251"
-elif [ "$format" == "4k" ]
-then
-    format="-f 315+251"
-fi
 
 if [ "$suche" == "suche" ]
 then
-  omxplayer -p -o ${output} `youtube-dl -g "ytsearch:$url" -q --force-ipv4 $format`
+  #omxplayer -p -o ${output} `youtube-dl -g "ytsearch:$url" -q --force-ipv4 $format`
+  /usr/bin/omxplayer.bin -I -s -o ${output} --vol -800 --aspect-mode letterbox --no-osd `youtube-dl -g "ytsearch:$url" -q --force-ipv4 ${format}`
 else
-  omxplayer -p -o ${output} `youtube-dl -g $url -q --force-ipv4 $format`
+  #omxplayer -p -o ${output} `youtube-dl -g $url -q --force-ipv4 $format`
+  /usr/bin/omxplayer.bin -I -s -o ${output} --vol -800 --aspect-mode letterbox --no-osd `youtube-dl -g $url -q --force-ipv4 ${format}`
 fi
