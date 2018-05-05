@@ -8,7 +8,7 @@ do
         FILENAME=${1##*/} # Dateiname ist alles ab dem letzten '/'
         echo "$FILENAME"
         # guck dir die Ausgabe erstmal an - wenn alles passt kannst Du das "echo" weglassen
-        ffmpeg -i "$FILENAME" -n -c:v libx264 -preset slow -crf 22 -c:a libfdk_aac -b:a 128k "${FILENAME%.*}.mp4" &
+        ffmpeg -i "$FILENAME" -vn -n -c:a libfdk_aac -b:a 128k "${FILENAME%.*}.mp3" &
         shift
         cd -
 done
