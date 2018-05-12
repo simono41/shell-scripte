@@ -11,6 +11,7 @@ fi
 
 url="$1"
 pfad="$2"
+[[ -z "${pfad}" ]] && pfad="."
 format="$3"
 
 #read -p "Wie ist die URL? : " url
