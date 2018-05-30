@@ -10,13 +10,7 @@ exit 0
 fi
 
 url="$1"
-pfad="$2"
-[[ -z "${pfad}" ]] && pfad="."
-format="$3"
-
-#read -p "Wie ist die URL? : " url
-#read -p "Wo sollen die Dateien heruntergeladen werden? : " pfad
-#read -p "Soll ein Video heruntergeladen werden oder Audio? [opus/m4a/video/hd/fullhd/4k] : " format
+format="$2"
 
 if [ "$format" == "opus" ]
 then
@@ -38,8 +32,4 @@ then
     format="-f 315+251"
 fi
 
-
-mkdir -p $pfad
-
-cd $pfad
 youtube-dl -i -c --socket-timeout 10000 --force-ipv4 --restrict-filenames $format $url
