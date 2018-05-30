@@ -1,5 +1,6 @@
 set -ex
 
+unset LD_PRELOAD
 HOME=/storage/emulated/0
 PREFIX=/data/data/com.termux/files/usr
 ROOT_HOME=$HOME
