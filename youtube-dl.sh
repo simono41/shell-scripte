@@ -4,7 +4,7 @@ set -ex
 
 if [ "$1" == "--help" ] || [[ -z "$1" ]]
 then
-echo "bash ./youtube-dl.sh URL PFAD FORMAT"
+echo "bash ./youtube-dl.sh URL FORMAT"
 echo "Formate: [opus/m4a/video/hd/fullhd/4k]"
 exit 0
 fi
