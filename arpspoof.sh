@@ -32,7 +32,7 @@ sleep 2
 if [ -z "$3" ]; then
   tcpkill -9 host $ip
 elif [ "$3" == "tcpdump" ]; then
-  tcpdump -i $modul -A host $ip >> out.txt
+  tcpdump -i $modul -A host $ip > out.txt
 else
-  dsniff -i $modul -w out.txt
+  dsniff -i $modul -mc > out.txt
 fi
