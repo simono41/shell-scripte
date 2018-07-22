@@ -19,7 +19,7 @@ else
   modul="$1"
 fi
 if [ -z "$2" ]; then
-  nmap -sn ${gateway}/24
+  nmap -v -sn ${gateway}/24
   read -p "Wie heisst die IP? : " ip
 else
   ip="$2"
